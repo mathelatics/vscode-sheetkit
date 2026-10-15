@@ -77,13 +77,17 @@ const tools: Record<string, { desc: string; fn: (a: any) => any }> = {
     fn: (a: { uri: string }) => {
       const p = pathFrom(a);
       if (!/\.pdf$/i.test(p)) throw new Error('office_extract_pdf_text requires a .pdf path');
-      let extract: ((buf: Uint8Array, opts?: any) => Promise<{ pages: string[] }>) | undefined;
+      let extract: ((buf: Uint8Array, opts?: any) => Promise<any>) | undefined;
       try { ({ extractText: extract } = require('unpdf')); } catch { /* optional */ }
       if (!extract) throw new Error('PDF extraction unavailable in this build (unpdf not installed)');
       const bytes = new Uint8Array(fs.readFileSync(p));
       // tools/call awaits promises? our loop is sync — do it synchronously via pdf.js is not possible,
       // so mark as async-capable: caller receives a thenable handled by the RPC layer below.
-      return extract(bytes, { mergePages: false }).then(r => ({ pages: r.pages ?? [], total: (r.pages ?? []).length }));
+      return extract(bytes, { mergePages: false }).then(r => {
+        // unpdf returns { totalPages, text: string[] } (one entry per page when mergePages:false)
+        const pages: string[] = Array.isArray(r?.text) ? r.text : Array.isArray(r?.pages) ? r.pages : [];
+        return { pages, total: pages.length };
+      });
     },
   },
 };
@@ -121,9 +125,10 @@ const toolSchemas: Record<string, any> = {
     required: ['uri', 'edits'],
   },
   office_save: { type: 'object', properties: { uri: { type: 'string' } }, required: ['uri'] },
+  office_extract_pdf_text: { type: 'object', properties: { uri: { type: 'string', description: 'Path or file:// URI of a .pdf file' } }, required: ['uri'] },
 };
 
-function handle(msg: any) {
+async function handle(msg: any) {
   const { id, method, params } = msg;
   if (method === 'initialize') return send({ jsonrpc: '2.0', id, result: { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'officefiles', version: '0.0.1' } } });
   if (method === 'notifications/initialized') return; // notification — no response
@@ -133,7 +138,7 @@ function handle(msg: any) {
     try {
       const t = (tools as any)[params?.name];
       if (!t) return send({ jsonrpc: '2.0', id, error: { code: -32602, message: `unknown tool: ${params?.name}` } });
-      const result = t.fn(params.arguments ?? {});
+      const result = await Promise.resolve(t.fn(params.arguments ?? {}));
       return send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result) }] } });
     } catch (e: any) {
       return send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: String(e?.message ?? e) }], isError: true } });
