@@ -1,0 +1,84 @@
+{
+  "name": "officefiles",
+  "displayName": "OfficeFiles — Agent-editable Office viewers & editors",
+  "description": "Custom editors for CSV/XLSX/DOCX/PPTX/Markdown with first-class AI agent control via MCP and Language Model tools. Humans and agents edit the same live document.",
+  "version": "0.0.1",
+  "publisher": "officefiles",
+  "license": "MIT",
+  "engines": { "vscode": "^1.94.0" },
+  "categories": ["Visualization", "Other"],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onCustomEditor:officefiles.csvEditor",
+    "onCustomEditor:officefiles.markdownEditor",
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "officefiles.csvEditor",
+        "displayName": "OfficeFiles Grid Editor",
+        "selector": [
+          { "filenamePattern": "*.csv" },
+          { "filenamePattern": "*.tsv" }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "officefiles.markdownEditor",
+        "displayName": "OfficeFiles Markdown",
+        "selector": [
+          { "filenamePattern": "*.md" },
+          { "filenamePattern": "*.markdown" }
+        ],
+        "priority": "option"
+      }
+    ],
+    "commands": [
+      { "command": "officefiles.openCsvAsGrid", "title": "OfficeFiles: Open as Grid Editor" },
+      { "command": "officefiles.agent.listDocuments", "title": "OfficeFiles(Agent): List Open Documents" },
+      { "command": "officefiles.agent.readDocument", "title": "OfficeFiles(Agent): Read Document JSON" },
+      { "command": "officefiles.agent.applyEdits", "title": "OfficeFiles(Agent): Apply Typed Edits" },
+      { "command": "officefiles.agent.saveDocument", "title": "OfficeFiles(Agent): Save Document" }
+    ],
+    "configuration": {
+      "title": "OfficeFiles",
+      "properties": {
+        "officefiles.agent.allowWrite": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow AI agents (MCP/chat tools) to mutate documents. Reads are always allowed."
+        },
+        "officefiles.grid.maxRowsPerPage": {
+          "type": "number",
+          "default": 500,
+          "description": "Chunk size for streaming rows into the grid webview."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build:host": "node esbuild.mjs",
+    "build:webview": "vite build",
+    "build": "npm run build:host && npm run build:webview",
+    "watch:host": "node esbuild.mjs --watch",
+    "dev:webview": "vite --port 5740",
+    "compile": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --pool=threads"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.94.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}
