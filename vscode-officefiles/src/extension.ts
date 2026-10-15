@@ -6,7 +6,7 @@ import { registerAgentCommands, registerLanguageModelTools } from './host/ops/ag
 import { openDocument } from './host/ops/documentOps';
 import { capabilityReport } from './core/codecs/registry';
 async function pickFile(): Promise<vscode.Uri | undefined> {
-  const uris = await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: false, filters: { 'Office files': ['xlsx', 'docx'] } });
+  const uris = await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: false, filters: { 'Office files': ['xlsx', 'docx', 'pptx', 'epub', 'pdf'] } });
   return uris?.[0];
 }
 import { startIpcBridge } from './host/ipc/bridge';
@@ -23,6 +23,8 @@ export function activate(context: vscode.ExtensionContext) {
     ...BINARY_FORMATS.map(f => vscode.window.registerCustomEditorProvider(f.viewType, new BinaryPreviewProvider(f), viewOption)),
     vscode.window.registerCustomEditorProvider('officefiles.xlsxViewer', new OoxmlPreviewProvider(context, 'xlsx'), viewOption),
     vscode.window.registerCustomEditorProvider('officefiles.docxViewer', new OoxmlPreviewProvider(context, 'docx'), viewOption),
+    vscode.window.registerCustomEditorProvider('officefiles.pptxViewer', new OoxmlPreviewProvider(context, 'pptx'), viewOption),
+    vscode.window.registerCustomEditorProvider('officefiles.epubViewer', new OoxmlPreviewProvider(context, 'epub'), viewOption),
   );
   // Agent convenience commands for office binaries (open into IR model + preview tab).
   context.subscriptions.push(

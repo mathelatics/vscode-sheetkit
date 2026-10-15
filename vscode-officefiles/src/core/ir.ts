@@ -8,6 +8,9 @@ export interface SheetIR {
   name: string;
   /** row-major values; ragged rows allowed */
   rows: CellValue[][];
+  /** binary codecs (xlsx) attach side-channel metadata here: per-cell style/formula maps.
+   *  Stripped by publicIr() before agent transport — mirrors DocIR's __xml block spans. */
+  meta?: Record<string, any>;
 }
 
 export interface TableDocIR {
@@ -115,7 +118,13 @@ function applyDocOp(doc: DocIR, o: EditOp) {
       doc.blocks[o.index] = o.block; break;
     case 'deleteBlock':
       if (o.index < 0 || o.index >= doc.blocks.length) throw new Error(`block ${o.index} out of range`);
-      doc.blocks.splice(o.index, 1); break;
+      { // tombstone so binary writers (docx) can strip the source paragraph on save
+        const [removed] = doc.blocks.splice(o.index, 1);
+        (removed as any).__deleted = true;
+        (doc as any).__tombstones = ((doc as any).__tombstones ?? []);
+        (doc as any).__tombstones.push(removed);
+      }
+      break;
     case 'replaceText': {
       const re = o.regex ? new RegExp(o.search, o.all !== false ? 'g' : '') : null;
       doc.blocks.forEach(b => {

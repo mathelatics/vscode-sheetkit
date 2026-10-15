@@ -125,17 +125,87 @@ export async function parseXlsxBytes(zip: ZipLike): Promise<TableDocIR> {
   return { kind: 'table', sheets, meta: { format: 'xlsx', __sheetMeta: sheetMeta, __sheetPaths: sheetPaths } };
 }
 
+/** Add a brand-new worksheet: minimal sheet part + workbook.xml <sheet> + rels + ContentTypes entries. */
+async function addXlsxSheet(zip: ZipLike, name: string): Promise<string> {
+  const z = zip as any;
+  // Pick an unused sheetN.xml part name.
+  let n = 1;
+  while (z.file(`xl/worksheets/sheet${n}.xml`)) n++;
+  const path = `xl/worksheets/sheet${n}.xml`;
+  z.file(path, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`);
+
+  const wbXml = await partText(zip, 'xl/workbook.xml');
+  if (!wbXml) throw new Error('xlsx missing xl/workbook.xml');
+  const maxSheetId = Math.max(0, ...[...wbXml.matchAll(/sheetId="(\d+)"/g)].map(m => +m[1]));
+  // r:id lives in workbook.xml; actual Id numbering lives in the rels part — compute both there.
+  let nextWb = wbXml.replace('</sheets>',
+    `<sheet name="${esc(name)}" sheetId="${maxSheetId + 1}" r:id="__OFNEW__"/></sheets>`);
+  z.file('xl/workbook.xml', nextWb);
+
+  const relsPath = 'xl/_rels/workbook.xml.rels';
+  const relsXml = await partText(zip, relsPath);
+  if (relsXml) {
+    const maxRel = Math.max(0, ...[...relsXml.matchAll(/Id="rId(\d+)"/g)].map(m => +m[1]));
+    const rid = `rId${maxRel + 1}`;
+    nextWb = nextWb.replace('__OFNEW__', rid);
+    z.file('xl/workbook.xml', nextWb);
+    z.file(relsPath, relsXml.replace('</Relationships>',
+      `<Relationship Id="${rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${n}.xml"/></Relationships>`));
+  } else {
+    nextWb = nextWb.replace(/ r:id="__OFNEW__"/, '');
+    z.file('xl/workbook.xml', nextWb);
+  }
+
+  const ctPath = '[Content_Types].xml';
+  const ct = await partText(zip, ctPath);
+  if (ct && !ct.includes(`PartName="/xl/worksheets/sheet${n}.xml"`)) {
+    z.file(ctPath, ct.replace('</Types>', `<Override PartName="/xl/worksheets/sheet${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`));
+  }
+  return path;
+}
+
+/** Remove a deleted sheet's entry from workbook.xml + its rels reference. */
+async function scrubXlsxSheet(zip: ZipLike, sheetPaths: Record<string, string>, name: string): Promise<void> {
+  const z = zip as any;
+  const wbXml = await partText(zip, 'xl/workbook.xml');
+  if (!wbXml) return;
+  const m = new RegExp(`<sheet[^>]*name="${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*/?>`).exec(wbXml);
+  if (!m) return;
+  const rid = /r:id="(rId\d+)"/.exec(m[0])?.[1];
+  z.file('xl/workbook.xml', wbXml.replace(m[0], ''));
+  if (rid) {
+    const relsPath = 'xl/_rels/workbook.xml.rels';
+    const relsXml = await partText(zip, relsPath);
+    if (relsXml) {
+      const rm = new RegExp(`<Relationship[^>]*Id="${rid}"[^>]*/?>`).exec(relsXml);
+      if (rm) z.file(relsPath, relsXml.replace(rm[0], ''));
+    }
+  }
+  delete sheetPaths[name];
+}
+
 export async function serializeXlsxBytes(zip: ZipLike, doc: TableDocIR): Promise<Uint8Array> {
   // Rich path: when parse-time metadata is attached (__sheetMeta/__sheetPaths), rewrite each
   // worksheet preserving styles + untouched formulas. Falls back to the plain rebuild otherwise.
   const sheetMeta = (doc.meta as any)?.__sheetMeta as Record<string, CellMeta> | undefined;
   const sheetPaths = (doc.meta as any)?.__sheetPaths as Record<string, string> | undefined;
   if (sheetMeta && sheetPaths) {
+    const written = new Set<string>();
     for (const s of doc.sheets) {
-      const path = sheetPaths[s.name];
-      if (!path) continue;
+      let path = sheetPaths[s.name];
+      // Agent added a new sheet? Create a minimal worksheet part + workbook/rels entries.
+      if (!path) {
+        path = await addXlsxSheet(zip, s.name);
+        sheetPaths[s.name] = path;
+        if (!sheetMeta[s.name]) sheetMeta[s.name] = {};
+      }
+      written.add(path);
       // @ts-ignore jszip file() setter
       zip.file(path, serializeSheetXmlRich(s, sheetMeta[s.name]));
+    }
+    // Sheet deleted: remove its workbook.xml entry, rels entry and part reference.
+    for (const name of Object.keys(sheetPaths)) {
+      if (!doc.sheets.some(s => s.name === name)) scrubXlsxSheet(zip, sheetPaths, name);
     }
     return zip.generateAsync({ type: 'uint8array' });
   }
@@ -323,28 +393,44 @@ export function rewriteDocxParagraph(origParaXml: string, newText: string): stri
   return out;
 }
 
+/** Minimal WordprocessingML paragraph for blocks created by agents (no source <w:p> exists). */
+function mkPara(text: string, headingLevel?: number): string {
+  const pPr = headingLevel ? `<w:pPr><w:pStyle w:val="Heading${Math.min(Math.max(headingLevel, 1), 6)}"/></w:pPr>` : '';
+  return `<w:p>${pPr}<w:r><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+}
+
 /** Serialize an edited DocIR back into the ORIGINAL package bytes, rewriting only touched paragraphs. */
 export async function serializeDocxBytes(zip: ZipLike, doc: DocIR): Promise<Uint8Array> {
   const docXml = await partText(zip, 'word/document.xml');
   if (!docXml) throw new Error('Not a docx: missing word/document.xml');
-  const paras = [...docXml.matchAll(/<w:p\b(?:[^>]*)?>(?:[\s\S]*?)<\/w:p>|<w:p\b[^>]*\/>/g)];
   // Map IR blocks (non-empty ones) back to their source paragraph spans via __xml identity.
   let next = docXml;
   const touched = new Map<string, string>(); // origXml -> newXml
-  for (const b of doc.blocks) {
+  const appended: string[] = [];             // new blocks (no __xml) -> inserted before sectPr/body end
+  const allBlocks = [...doc.blocks, ...(((doc as any).__tombstones as BlockIR[]) ?? [])];
+  for (const b of allBlocks) {
     const orig = (b as any).__xml as string | undefined;
-    if (!orig) continue;
+    if (!orig) {
+      if ((b as any).__deleted) continue;                        // deleted synthetic block: nothing on disk to remove
+      appended.push(mkPara(b.text, b.type === 'heading' ? b.level : undefined));
+      continue;
+    }
+    if ((b as any).__deleted) { touched.set(orig, ''); continue; } // deleted original: strip paragraph
     const curText = [...orig.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map(m => unesc(m[1])).join('');
-    if (curText === b.text) continue;                       // unchanged
-    touched.set(orig, rewriteDocxParagraph(orig, b.text));  // changed -> preserve runs/styles
+    if (curText === b.text) continue;                            // unchanged
+    touched.set(orig, rewriteDocxParagraph(orig, b.text));       // changed -> preserve runs/styles
   }
   // Replace longest-first to avoid substring collisions between similar short paragraphs.
   for (const [orig, rep] of [...touched.entries()].sort((a, c) => c[0].length - a[0].length)) {
     const idx = next.indexOf(orig);
     if (idx >= 0) next = next.slice(0, idx) + rep + next.slice(idx + orig.length);
   }
+  if (appended.length) {
+    const body = appended.join('');
+    if (/<w:sectPr\b/.test(next)) next = next.replace(/<w:sectPr\b[\s\S]*?(?:<\/w:sectPr>|\/>)/, m => body + m);
+    else next = next.replace(/<\/w:body>/, body + '</w:body>');
+  }
   // @ts-ignore jszip file() setter
   zip.file('word/document.xml', next);
-  void paras;
   return zip.generateAsync({ type: 'uint8array' });
 }

@@ -116,6 +116,42 @@
           }
         ],
         "priority": "option"
+      },
+      {
+        "viewType": "officefiles.pptxViewer",
+        "displayName": "OfficeFiles PowerPoint Reader",
+        "selector": [
+          {
+            "filenamePattern": "*.pptx"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "officefiles.epubViewer",
+        "displayName": "OfficeFiles EPUB Reader",
+        "selector": [
+          {
+            "filenamePattern": "*.epub"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "officefiles.archiveViewer",
+        "displayName": "OfficeFiles Archive Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.zip"
+          },
+          {
+            "filenamePattern": "*.vsix"
+          },
+          {
+            "filenamePattern": "*.jar"
+          }
+        ],
+        "priority": "option"
       }
     ],
     "commands": [

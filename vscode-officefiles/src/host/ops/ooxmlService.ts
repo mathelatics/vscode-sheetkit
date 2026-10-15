@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import JSZip from 'jszip';
 import { DocumentIR, EditOp, TableDocIR, DocIR, applyOps, isTableDoc, isTextDoc } from '../../core/ir';
 import { parseXlsxBytes, serializeXlsxBytes, parseDocxBytes, serializeDocxBytes } from '../../core/codecs/ooxml';
+import { parsePptxBytes, parseEpubBytes } from '../../core/codecs/viewers';
 
 /** Minimal structural HTML renderers for the read-only webview previews (no styling deps). */
 export function sheetToHtml(ir: DocumentIR): string {
@@ -15,9 +16,9 @@ export function docToHtml(ir: DocumentIR): string {
 }
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-/** Read-only preview provider for xlsx/docx (grid/paragraph view of parsed IR). */
+/** Read-only preview provider for xlsx/docx/pptx/epub (grid/paragraph view of parsed IR). */
 export class OoxmlPreviewProvider implements vscode.CustomReadonlyEditorProvider {
-  constructor(private context: vscode.ExtensionContext, private kind: 'xlsx' | 'docx') {}
+  constructor(private context: vscode.ExtensionContext, private kind: 'xlsx' | 'docx' | 'pptx' | 'epub') {}
   async openCustomDocument(uri: vscode.Uri): Promise<vscode.CustomDocument> {
     const d = await ooxml.open(uri);
     return { uri, dispose: () => ooxml.close(d.id) };
@@ -48,7 +49,7 @@ export async function extractPdfText(bytes: Uint8Array): Promise<{ pages: string
 interface BinDoc {
   id: string;
   uri: vscode.Uri;
-  format: 'xlsx' | 'docx' | 'pdf';
+  format: 'xlsx' | 'docx' | 'pdf' | 'pptx' | 'epub';
   ir: DocumentIR;
   zip: JSZip;               // full package kept in memory => other parts preserved on save
   dirty: boolean;
@@ -72,9 +73,11 @@ export const ooxml = {
     }
     const zip = await JSZip.loadAsync(bytes);
     let ir: DocumentIR;
-    let format: 'xlsx' | 'docx';
+    let format: 'xlsx' | 'docx' | 'pptx' | 'epub';
     if (lower.endsWith('.xlsx')) { ir = await parseXlsxBytes(zip as any); format = 'xlsx'; }
     else if (lower.endsWith('.docx')) { ir = await parseDocxBytes(zip as any); format = 'docx'; }
+    else if (lower.endsWith('.pptx')) { ir = await parsePptxBytes(zip as any); format = 'pptx'; }
+    else if (lower.endsWith('.epub')) { ir = await parseEpubBytes(zip as any); format = 'epub'; }
     else throw new Error(`unsupported office binary: ${uri.fsPath}`);
     const doc: BinDoc = { id: `bin-${++seq.n}`, uri, format, ir, zip, dirty: false };
     binDocs.set(doc.id, doc);
@@ -88,6 +91,10 @@ export const ooxml = {
   list() {
     return [...binDocs.values()].map(d => ({ id: d.id, uri: d.uri.toString(), kind: d.format, dirty: d.dirty }));
   },
+  /** Full docs (internal use only — search/ops; never expose zip bytes over agent transport). */
+  all(): BinDoc[] {
+    return [...binDocs.values()];
+  },
   read(idOrUri: string): DocumentIR {
     const d = this.get(idOrUri);
     if (!d) throw new Error(`office document not open: ${idOrUri}`);
@@ -97,6 +104,7 @@ export const ooxml = {
     const d = this.get(idOrUri);
     if (!d) throw new Error(`office document not open: ${idOrUri}`);
     if (d.format === 'pdf') throw new Error('pdf is read-only (text extraction for agents; no writer)');
+    if (d.format === 'pptx' || d.format === 'epub') throw new Error(`${d.format} is preview-only: agent-readable IR, but no writer yet`);
     const ir = structuredClone(d.ir);
     applyOps(ir, edits);
     d.ir = ir;

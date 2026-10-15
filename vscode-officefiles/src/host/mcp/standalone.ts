@@ -72,6 +72,20 @@ const tools: Record<string, { desc: string; fn: (a: any) => any }> = {
       return { saved: true };
     },
   },
+  office_extract_pdf_text: {
+    desc: 'Extract text from a PDF file (per page) so you can read/search its contents. Read-only.',
+    fn: (a: { uri: string }) => {
+      const p = pathFrom(a);
+      if (!/\.pdf$/i.test(p)) throw new Error('office_extract_pdf_text requires a .pdf path');
+      let extract: ((buf: Uint8Array, opts?: any) => Promise<{ pages: string[] }>) | undefined;
+      try { ({ extractText: extract } = require('unpdf')); } catch { /* optional */ }
+      if (!extract) throw new Error('PDF extraction unavailable in this build (unpdf not installed)');
+      const bytes = new Uint8Array(fs.readFileSync(p));
+      // tools/call awaits promises? our loop is sync — do it synchronously via pdf.js is not possible,
+      // so mark as async-capable: caller receives a thenable handled by the RPC layer below.
+      return extract(bytes, { mergePages: false }).then(r => ({ pages: r.pages ?? [], total: (r.pages ?? []).length }));
+    },
+  },
 };
 
 // Minimal JSON-RPC over stdio implementing MCP handshake (tools/list, tools/call).

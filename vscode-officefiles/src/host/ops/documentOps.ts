@@ -90,6 +90,18 @@ export const ops = {
       if (isTableDoc(ir)) ir.sheets.forEach(s => s.rows.forEach((r: any[], ri: number) => r.forEach((c: any, ci: number) => hit(`${s.name}!${ci}:${ri}`, String(c ?? '')))));
       else if (isTextDoc(ir)) ir.blocks.forEach((b, i) => hit(`block:${i}`, b.text + ' ' + (b.items ?? []).join(' ')));
     }
+    // Binary office docs (xlsx/docx/pptx/epub/pdf models opened via ooxml service) too.
+    for (const bd of ooxml.all()) {
+      const d = { id: bd.id, uri: bd.uri };
+      const re = regex ? new RegExp(query, 'g') : null;
+      const hit = (loc: string, text: string) => {
+        if (re ? re.test(text) : text.includes(query)) out.push({ docId: d.id, uri: d.uri.toString(), location: loc, preview: text.slice(0, 200) });
+        if (re) re.lastIndex = 0;
+      };
+      const ir = publicIr(bd.ir);
+      if (isTableDoc(ir)) ir.sheets.forEach(s => s.rows.forEach((r: any[], ri: number) => r.forEach((c: any, ci: number) => hit(`${s.name}!${ci}:${ri}`, String(c ?? '')))));
+      else if (isTextDoc(ir)) ir.blocks.forEach((b, i) => hit(`block:${i}`, b.text + ' ' + (b.items ?? []).join(' ')));
+    }
     return out;
   },
   async applyEdits(uriOrId: string, edits: EditOp[], actor = 'agent') {
@@ -128,9 +140,13 @@ export function publicIr(ir: DocumentIR): DocumentIR {
 export async function openDocument(uri: vscode.Uri, viewType?: string) {
   const lower = uri.fsPath.toLowerCase();
   // Binary office formats: host-side zip model, no TextDocument involved.
-  if (/\.(xlsx|docx|pdf)$/.test(lower)) {
+  if (/\.(xlsx|docx|pdf|pptx|epub)$/.test(lower)) {
     await ooxml.open(uri);
-    const vt = /\.xlsx$/.test(lower) ? 'officefiles.xlsxViewer' : /\.docx$/.test(lower) ? 'officefiles.docxViewer' : 'officefiles.pdfViewer';
+    const vt = /\.xlsx$/.test(lower) ? 'officefiles.xlsxViewer'
+      : /\.docx$/.test(lower) ? 'officefiles.docxViewer'
+      : /\.pptx$/.test(lower) ? 'officefiles.pptxViewer'
+      : /\.epub$/.test(lower) ? 'officefiles.epubViewer'
+      : 'officefiles.pdfViewer';
     try { await vscode.commands.executeCommand('vscode.openWith', uri, vt); }
     catch { await vscode.commands.executeCommand('vscode.open', uri); }
     return null;

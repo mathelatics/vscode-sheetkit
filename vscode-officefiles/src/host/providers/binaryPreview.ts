@@ -2,18 +2,22 @@
 // This is the honest capability boundary — same pattern vscode-office uses for pptx/epub etc.,
 // but declared in one place so every surface (provider, agent tools, docs) reports it consistently.
 import * as vscode from 'vscode';
+import { listZipEntries } from '../../core/codecs/viewers';
+
+const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export interface BinaryFormat {
   viewType: string;
   label: string;
   extensions: string[];        // lowercase, with dot
-  kind: 'pdf' | 'image';
+  kind: 'pdf' | 'image' | 'archive';
   editable: false;             // marker for capability queries
 }
 
 export const BINARY_FORMATS: BinaryFormat[] = [
   { viewType: 'officefiles.pdfViewer', label: 'OfficeFiles PDF Viewer', extensions: ['.pdf'], kind: 'pdf', editable: false },
   { viewType: 'officefiles.imageViewer', label: 'OfficeFiles Image Viewer', extensions: ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.ico', '.svg'], kind: 'image', editable: false },
+  { viewType: 'officefiles.archiveViewer', label: 'OfficeFiles Archive Viewer', extensions: ['.zip', '.vsix', '.jar'], kind: 'archive', editable: false },
 ];
 
 /** CustomTextEditorProvider-compatible viewer that renders a webview for binary bytes. */
@@ -27,6 +31,22 @@ export class BinaryPreviewProvider implements vscode.CustomReadonlyEditorProvide
   async resolveCustomEditor(doc: vscode.CustomDocument, webviewPanel: vscode.WebviewPanel): Promise<void> {
     webviewPanel.webview.options = { enableScripts: true };
     const bytes = await vscode.workspace.fs.readFile(doc.uri);
+    if (this.fmt.kind === 'archive') {
+      // Dependency-free central-directory listing rendered as an HTML table.
+      let rows = '';
+      try {
+        const entries = listZipEntries(bytes);
+        rows = entries.map(e => `<tr><td>${escHtml(e.name)}</td><td style="text-align:right">${e.size}</td><td style="text-align:right">${e.compressed}</td></tr>`).join('');
+      } catch (err: any) {
+        rows = `<tr><td colspan="3">Cannot list archive: ${escHtml(String(err?.message ?? err))}</td></tr>`;
+      }
+      webviewPanel.webview.html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+body{font-family:var(--vscode-font-family);color:var(--vscode-editor-foreground);background:var(--vscode-editor-background);padding:12px}
+table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--vscode-panel-border,#444);padding:4px 8px}</style></head>
+<body><h2>${escHtml(doc.uri.path.split('/').pop() ?? '')}</h2><table><tr><th>Name</th><th>Size</th><th>Compressed</th></tr>${rows}</table>
+<p style="opacity:.7">Archive contents listed read-only. Open .docx/.xlsx/.pptx/.epub with their dedicated OfficeFiles editors for structured views.</p></body></html>`;
+      return;
+    }
     if (this.fmt.kind === 'pdf') {
       // Self-contained pdf.js CDN viewer — no bundling needed; falls back to native embed.
       const b64 = Buffer.from(bytes).toString('base64');
