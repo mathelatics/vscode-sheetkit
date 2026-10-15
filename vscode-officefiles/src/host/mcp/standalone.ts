@@ -2,7 +2,8 @@
 // Runs the same core codecs directly on files — no IDE required. Build: node esbuild.mjs -> out/mcp-standalone.js
 // Add to any MCP client config: { "mcpServers": { "officefiles": { "command": "node", "args": ["/path/out/mcp-standalone.js"] } } }
 import * as fs from 'fs';
-import { applyOps, DocumentIR, EditOp } from '../../core/ir';
+import { fileURLToPath } from 'url';
+import { applyOps, DocumentIR, EditOp, isTableDoc } from '../../core/ir';
 import { parseCsv, serializeCsv } from '../../core/codecs/csv';
 import { parseMarkdown, serializeMarkdown } from '../../core/codecs/markdown';
 
@@ -16,13 +17,60 @@ function store(uri: string, doc: { ir: DocumentIR; kind: string }) {
   fs.writeFileSync(uri, out, 'utf8');
 }
 
-const tools = {
-  office_headless_read: (a: any) => load(a.uri).ir,
-  office_headless_apply_edits: (a: { uri: string; edits: EditOp[] }) => {
-    const doc = load(a.uri);
-    applyOps(doc.ir, a.edits);
-    store(a.uri, doc);            // headless mode writes immediately (agent approval is the gate)
-    return { applied: a.edits.length };
+// Accept both plain paths and file:// URIs so MCP clients can pass either form.
+function toPath(uriOrPath: string): string {
+  if (/^file:\/\//i.test(uriOrPath)) return fileURLToPath(uriOrPath);
+  return uriOrPath;
+}
+
+function pathFrom(a: any): string {
+  const p = toPath(String(a.uri ?? ''));
+  if (!p) throw new Error('missing required argument: uri');
+  return p;
+}
+
+const tools: Record<string, { desc: string; fn: (a: any) => any }> = {
+  office_read: {
+    desc: 'Read a document (csv/tsv/markdown) and return its structured IR (blocks or table rows).',
+    fn: (a) => load(pathFrom(a)).ir,
+  },
+  office_search: {
+    desc: 'Search a document for a query string. Returns matches with block/row/column locations.',
+    fn: (a) => {
+      const { ir } = load(pathFrom(a));
+      const q = String(a.query ?? '').toLowerCase();
+      const hits: any[] = [];
+      if (isTableDoc(ir)) {
+        ir.sheets.forEach((s, si) => s.rows.forEach((r, ri) => r.forEach((v, ci) => {
+          if (String(v ?? '').toLowerCase().includes(q)) hits.push({ sheet: si, row: ri, col: ci, value: v });
+        })));
+      } else {
+        ir.blocks.forEach((b, bi) => {
+          const text = JSON.stringify(b);
+          if (text.toLowerCase().includes(q)) hits.push({ block: bi, type: b.type, preview: text.slice(0, 200) });
+        });
+      }
+      return { total: hits.length, hits: hits.slice(0, 100) };
+    },
+  },
+  office_apply_edits: {
+    desc: 'Apply typed edit operations (insert/update/delete on blocks or cells) to a document and save it.',
+    fn: (a: { uri: string; edits: EditOp[] }) => {
+      const p = pathFrom(a);
+      const doc = load(p);
+      applyOps(doc.ir, a.edits ?? []);
+      store(p, doc);            // headless mode writes immediately (agent approval is the gate)
+      return { applied: (a.edits ?? []).length };
+    },
+  },
+  office_save: {
+    desc: 'Re-serialize the document IR back to disk (round-trip check / explicit save).',
+    fn: (a: { uri: string }) => {
+      const p = pathFrom(a);
+      const doc = load(p);
+      store(p, doc);
+      return { saved: true };
+    },
   },
 };
 
@@ -41,17 +89,40 @@ process.stdin.on('data', chunk => {
   }
 });
 function send(resp: any) { process.stdout.write(JSON.stringify(resp) + '\n'); }
+
+// Per-tool JSON Schemas so agents know exactly what arguments to pass.
+const toolSchemas: Record<string, any> = {
+  office_read: { type: 'object', properties: { uri: { type: 'string', description: 'File path or file:// URI of a .csv/.tsv/.md document' } }, required: ['uri'] },
+  office_search: { type: 'object', properties: { uri: { type: 'string' }, query: { type: 'string', description: 'Case-insensitive substring to locate' } }, required: ['uri', 'query'] },
+  office_apply_edits: {
+    type: 'object',
+    properties: {
+      uri: { type: 'string' },
+      edits: {
+        type: 'array',
+        description: 'Typed edit ops. Table docs: {op:"setCell",row,col,value}, {op:"insertRow",row,values?}, {op:"deleteRow",row}, {op:"insertColumn",col,header?}, {op:"replaceText",search,replacement}. Document (markdown) docs: {op:"appendBlock",block:{type,text}}, {op:"insertBlock",after?,block}, {op:"replaceBlock",index,block}, {op:"deleteBlock",index}, {op:"replaceText",search,replacement}.',
+        items: { type: 'object', properties: { op: { type: 'string' } }, required: ['op'] },
+      },
+    },
+    required: ['uri', 'edits'],
+  },
+  office_save: { type: 'object', properties: { uri: { type: 'string' } }, required: ['uri'] },
+};
+
 function handle(msg: any) {
   const { id, method, params } = msg;
   if (method === 'initialize') return send({ jsonrpc: '2.0', id, result: { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'officefiles', version: '0.0.1' } } });
-  if (method === 'tools/list') return send({ jsonrpc: '2.0', id, result: { tools: Object.keys(tools).map(name => ({ name, description: name, inputSchema: { type: 'object', properties: { uri: { type: 'string' }, edits: { type: 'array' } }, required: ['uri'] } })) } });
+  if (method === 'notifications/initialized') return; // notification — no response
+  if (method === 'ping') return send({ jsonrpc: '2.0', id, result: {} });
+  if (method === 'tools/list') return send({ jsonrpc: '2.0', id, result: { tools: Object.entries(tools).map(([name, t]) => ({ name, description: t.desc, inputSchema: toolSchemas[name] })) } });
   if (method === 'tools/call') {
     try {
-      const fn = (tools as any)[params.name];
-      const result = fn ? fn(params.arguments ?? {}) : { error: 'unknown tool' };
+      const t = (tools as any)[params?.name];
+      if (!t) return send({ jsonrpc: '2.0', id, error: { code: -32602, message: `unknown tool: ${params?.name}` } });
+      const result = t.fn(params.arguments ?? {});
       return send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result) }] } });
     } catch (e: any) {
-      return send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: String(e?.message) }], isError: true } });
+      return send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: String(e?.message ?? e) }], isError: true } });
     }
   }
   if (id !== undefined) send({ jsonrpc: '2.0', id, error: { code: -32601, message: 'method not found' } });

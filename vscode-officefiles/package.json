@@ -5,8 +5,13 @@
   "version": "0.0.1",
   "publisher": "officefiles",
   "license": "MIT",
-  "engines": { "vscode": "^1.94.0" },
-  "categories": ["Visualization", "Other"],
+  "engines": {
+    "vscode": "^1.94.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
   "main": "./out/extension.js",
   "activationEvents": [
     "onCustomEditor:officefiles.csvEditor",
@@ -19,8 +24,12 @@
         "viewType": "officefiles.csvEditor",
         "displayName": "OfficeFiles Grid Editor",
         "selector": [
-          { "filenamePattern": "*.csv" },
-          { "filenamePattern": "*.tsv" }
+          {
+            "filenamePattern": "*.csv"
+          },
+          {
+            "filenamePattern": "*.tsv"
+          }
         ],
         "priority": "option"
       },
@@ -28,18 +37,112 @@
         "viewType": "officefiles.markdownEditor",
         "displayName": "OfficeFiles Markdown",
         "selector": [
-          { "filenamePattern": "*.md" },
-          { "filenamePattern": "*.markdown" }
+          {
+            "filenamePattern": "*.md"
+          },
+          {
+            "filenamePattern": "*.markdown"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "officefiles.jsonEditor",
+        "displayName": "OfficeFiles JSON Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.json"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "officefiles.pdfViewer",
+        "displayName": "OfficeFiles PDF Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.pdf"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "officefiles.imageViewer",
+        "displayName": "OfficeFiles Image Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.png"
+          },
+          {
+            "filenamePattern": "*.jpg"
+          },
+          {
+            "filenamePattern": "*.jpeg"
+          },
+          {
+            "filenamePattern": "*.gif"
+          },
+          {
+            "filenamePattern": "*.bmp"
+          },
+          {
+            "filenamePattern": "*.webp"
+          },
+          {
+            "filenamePattern": "*.ico"
+          },
+          {
+            "filenamePattern": "*.svg"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "officefiles.xlsxViewer",
+        "displayName": "OfficeFiles Excel Viewer (beta)",
+        "selector": [
+          {
+            "filenamePattern": "*.xlsx"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "officefiles.docxViewer",
+        "displayName": "OfficeFiles Word Reader (beta)",
+        "selector": [
+          {
+            "filenamePattern": "*.docx"
+          }
         ],
         "priority": "option"
       }
     ],
     "commands": [
-      { "command": "officefiles.openCsvAsGrid", "title": "OfficeFiles: Open as Grid Editor" },
-      { "command": "officefiles.agent.listDocuments", "title": "OfficeFiles(Agent): List Open Documents" },
-      { "command": "officefiles.agent.readDocument", "title": "OfficeFiles(Agent): Read Document JSON" },
-      { "command": "officefiles.agent.applyEdits", "title": "OfficeFiles(Agent): Apply Typed Edits" },
-      { "command": "officefiles.agent.saveDocument", "title": "OfficeFiles(Agent): Save Document" }
+      {
+        "command": "officefiles.openCsvAsGrid",
+        "title": "OfficeFiles: Open as Grid Editor"
+      },
+      {
+        "command": "officefiles.agent.listDocuments",
+        "title": "OfficeFiles(Agent): List Open Documents"
+      },
+      {
+        "command": "officefiles.agent.readDocument",
+        "title": "OfficeFiles(Agent): Read Document JSON"
+      },
+      {
+        "command": "officefiles.agent.applyEdits",
+        "title": "OfficeFiles(Agent): Apply Typed Edits"
+      },
+      {
+        "command": "officefiles.agent.searchDocuments",
+        "title": "OfficeFiles(Agent): Search Open Documents"
+      },
+      {
+        "command": "officefiles.agent.saveDocument",
+        "title": "OfficeFiles(Agent): Save Document"
+      }
     ],
     "configuration": {
       "title": "OfficeFiles",
@@ -48,6 +151,11 @@
           "type": "boolean",
           "default": true,
           "description": "Allow AI agents (MCP/chat tools) to mutate documents. Reads are always allowed."
+        },
+        "officefiles.agent.ipcBridge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Expose a local IPC socket so external MCP clients (bin/mcp-ipc-proxy.js) can drive the live editors in this VS Code window."
         },
         "officefiles.grid.maxRowsPerPage": {
           "type": "number",
@@ -68,17 +176,19 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
-    "@types/vscode": "^1.94.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/vscode": "^1.94.0",
+    "@vitejs/plugin-react": "^4.3.0",
     "esbuild": "^0.24.0",
     "typescript": "^5.6.0",
     "vite": "^6.0.0",
-    "@vitejs/plugin-react": "^4.3.0",
     "vitest": "^2.1.0"
   },
   "dependencies": {
+    "jszip": "^3.10.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "unpdf": "^1.7.0"
   }
 }

@@ -37,11 +37,12 @@ export type DocumentIR = TableDocIR | DocIR;
 
 /** Typed, minimal, agent-friendly edit operations. Batch = atomic from caller view. */
 export type EditOp =
-  | { op: 'setCell'; sheet: string; row: number; col: number; value: CellValue }
-  | { op: 'insertRow'; sheet: string; row: number; values?: CellValue[] }
-  | { op: 'deleteRow'; sheet: string; row: number }
-  | { op: 'insertColumn'; sheet: string; col: number; header?: string; values?: CellValue[] }
+  | { op: 'setCell'; sheet?: string; row: number; col: number; value: CellValue }
+  | { op: 'insertRow'; sheet?: string; row: number; values?: CellValue[] }
+  | { op: 'deleteRow'; sheet?: string; row: number }
+  | { op: 'insertColumn'; sheet?: string; col: number; header?: string; values?: CellValue[] }
   | { op: 'appendBlock'; block: BlockIR }
+  | { op: 'insertBlock'; after?: number; block: BlockIR }   // insert at end if `after` omitted
   | { op: 'replaceBlock'; index: number; block: BlockIR }
   | { op: 'deleteBlock'; index: number }
   | { op: 'replaceText'; search: string; replacement: string; regex?: boolean; all?: boolean };
@@ -105,6 +106,10 @@ function applyTableOp(doc: TableDocIR, o: EditOp) {
 function applyDocOp(doc: DocIR, o: EditOp) {
   switch (o.op) {
     case 'appendBlock': doc.blocks.push(o.block); break;
+    case 'insertBlock': {
+      const at = o.after === undefined ? doc.blocks.length : Math.max(0, Math.min(o.after + 1, doc.blocks.length));
+      doc.blocks.splice(at, 0, o.block); break;
+    }
     case 'replaceBlock':
       if (o.index < 0 || o.index >= doc.blocks.length) throw new Error(`block ${o.index} out of range`);
       doc.blocks[o.index] = o.block; break;

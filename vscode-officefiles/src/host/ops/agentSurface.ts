@@ -18,6 +18,7 @@ export function registerAgentCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('officefiles.agent.listDocuments', wrap(() => ops.listDocuments())),
     vscode.commands.registerCommand('officefiles.agent.readDocument', wrap((id: string, range?: any) => ops.read(id, range))),
     vscode.commands.registerCommand('officefiles.agent.applyEdits', wrapAsync((id: string, edits: any[], actor?: string) => ops.applyEdits(id, edits, actor))),
+    vscode.commands.registerCommand('officefiles.agent.searchDocuments', wrap((query: string, regex?: boolean) => ops.search(query, !!regex))),
     vscode.commands.registerCommand('officefiles.agent.saveDocument', wrapAsync((id: string) => ops.save(id))),
     vscode.commands.registerCommand('officefiles.openCsvAsGrid', async () => {
       const uris = await vscode.window.showOpenDialog({ filters: { 'CSV/TSV': ['csv', 'tsv'] } });
@@ -41,6 +42,7 @@ export function registerLanguageModelTools(context: vscode.ExtensionContext) {
   const handlerSchemas: Record<string, any> = {
     'officefiles.listDocuments': {},
     'officefiles.readDocument': { docId: { type: 'string' }, range: { type: 'object' } },
+    'officefiles.search': { query: { type: 'string' }, regex: { type: 'boolean' } },
     'officefiles.applyEdits': { docId: { type: 'string' }, edits: { type: 'array', items: { type: 'object' } } },
     'officefiles.saveDocument': { docId: { type: 'string' } },
   };
@@ -48,10 +50,32 @@ export function registerLanguageModelTools(context: vscode.ExtensionContext) {
   mk('officefiles.listDocuments', 'List OfficeFiles documents currently open in the editor.', async () => ops.listDocuments());
   mk('officefiles.readDocument', 'Read a document as structured JSON IR (table sheets/rows or markdown blocks).',
     async o => ops.read(o.docId, o.range));
+  mk('officefiles.search', 'Search all open OfficeFiles documents for a substring or regex; returns docId + location for applyEdits.',
+    async o => ops.search(o.query, !!o.regex),
+    'Use before applyEdits to find cells/blocks to change.');
   mk('officefiles.applyEdits', 'Apply typed edit operations (setCell/insertRow/appendBlock/replaceText...) atomically; user can undo.',
     o => ops.applyEdits(o.docId, o.edits, 'copilot'),
     'Use this to modify spreadsheet cells or document blocks instead of editing files blindly.');
   mk('officefiles.saveDocument', 'Save the document to disk.', o => ops.save(o.docId));
+
+  // Office binary formats (xlsx read/write, docx read) + capability discovery for agents.
+  const openOffice = async (path: string) => {
+    const uri = vscode.Uri.file(path);
+    await openDocument(uri);
+    const d = require('./ooxmlService').ooxml.get(uri.toString());
+    return d ? { id: d.id, uri: d.uri.toString(), kind: d.format } : null;
+  };
+  handlerSchemas['officefiles.openOffice'] = { path: { type: 'string' } };
+  handlerSchemas['officefiles.capabilities'] = {};
+  mk('officefiles.openOffice', 'Open an xlsx/docx file so it can be read/edited via OfficeFiles tools. Returns docId.',
+    o => openOffice(o.path),
+    'Call before readDocument on .xlsx/.docx paths.');
+  mk('officefiles.capabilities', 'Report which file formats are editable vs preview-only.',
+    async () => require('../../core/codecs/registry').capabilityReport([
+      { exts: ['.pdf'], editable: false, irKind: 'none' },
+      { exts: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.svg'], editable: false, irKind: 'none' },
+      { exts: ['.docx'], editable: false, irKind: 'document' },
+    ]));
 }
 
 /**

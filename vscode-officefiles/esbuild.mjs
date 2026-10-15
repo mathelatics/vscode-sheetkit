@@ -10,6 +10,7 @@ async function main() {
     const ctxs = await Promise.all([
       esbuildContext({ ...common, entryPoints: ['src/extension.ts'], outfile: 'out/extension.js' }),
       esbuildContext({ ...common, entryPoints: ['src/host/mcp/standalone.ts'], outfile: 'out/mcp-standalone.js' }),
+      esbuildContext({ ...common, entryPoints: ['src/host/mcp/ipcProxy.ts'], outfile: 'out/mcp-ipc-proxy.js' }),
     ]);
     await Promise.all(ctxs.map(c => c.watch()));
     console.log('host watching');
@@ -17,6 +18,7 @@ async function main() {
     await Promise.all([
       build({ ...common, entryPoints: ['src/extension.ts'], outfile: 'out/extension.js' }),
       build({ ...common, entryPoints: ['src/host/mcp/standalone.ts'], outfile: 'out/mcp-standalone.js' }),
+      build({ ...common, entryPoints: ['src/host/mcp/ipcProxy.ts'], outfile: 'out/mcp-ipc-proxy.js' }),
     ]);
     console.log('host built');
   }

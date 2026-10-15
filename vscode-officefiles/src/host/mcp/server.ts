@@ -40,6 +40,33 @@ export const mcpTools: McpToolDef[] = [
     inputSchema: { type: 'object', properties: { docId: { type: 'string' } }, required: ['docId'] },
     handler: async (a) => ops.save(a.docId),
   },
+  {
+    name: 'office_open', description: 'Open a file by absolute path in OfficeFiles (csv/md/json/tsv grid or editors; xlsx/docx into the office model). Returns docId for other tools.',
+    inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] },
+    handler: async (a) => {
+      const vscode_ = await import('vscode');
+      const { openDocument } = await import('../ops/documentOps');
+      const uri = vscode_.Uri.file(a.path);
+      await openDocument(uri);
+      const listed = ops.listDocuments().find(d => d.uri === uri.toString());
+      return listed ?? { opened: uri.toString() };
+    },
+  },
+  {
+    name: 'office_capabilities', description: 'Which formats are editable vs preview-only, and the EditOp vocabulary.',
+    inputSchema: { type: 'object', properties: {} },
+    handler: async () => {
+      const { capabilityReport } = await import('../../core/codecs/registry');
+      return {
+        ...capabilityReport([
+          { exts: ['.pdf'], editable: false, irKind: 'none' },
+          { exts: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.svg'], editable: false, irKind: 'none' },
+          { exts: ['.docx'], editable: false, irKind: 'document' },
+        ]),
+        editOps: ['setCell', 'insertRow', 'deleteRow', 'insertColumn', 'appendBlock', 'insertBlock', 'replaceBlock', 'deleteBlock', 'replaceText'],
+      };
+    },
+  },
 ];
 
 /** Register in-process MCP server definition so VS Code chat agents discover our tools. */
