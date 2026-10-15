@@ -33,7 +33,7 @@ export class OoxmlPreviewProvider implements vscode.CustomReadonlyEditorProvider
 
 // PDF text extraction for agents: unpdf (server-safe pdf.js build) runs in the extension host.
 // Falls back gracefully when the package is unavailable (keeps esbuild/tests dependency-light).
-let _extractText: ((buf: Uint8Array, opts?: any) => Promise<{ totalPages: number; pages: string[] }>) | undefined;
+let _extractText: ((buf: Uint8Array, opts?: any) => Promise<{ totalPages: number; text: string[]; pages?: string[] }>) | undefined;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   ({ extractText: _extractText } = require('unpdf'));
@@ -42,7 +42,8 @@ try {
 export async function extractPdfText(bytes: Uint8Array): Promise<{ pages: string[]; text: string }> {
   if (!_extractText) throw new Error('PDF text extraction unavailable (unpdf not installed)');
   const r = await _extractText(bytes as any, { mergePages: false });
-  const pages = r.pages ?? [];
+  // unpdf returns per-page strings in `text` (pages kept for forward-compat)
+  const pages: string[] = Array.isArray(r?.text) ? r.text : Array.isArray(r?.pages) ? r.pages : [];
   return { pages, text: pages.join('\n\n') };
 }
 
