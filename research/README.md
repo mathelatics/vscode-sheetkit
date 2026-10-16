@@ -10,6 +10,8 @@ Design research (from studying [cweijan/vscode-office](https://github.com/cweija
 | [03-lowlevel-details.md](03-lowlevel-details.md) | Low-level | `{type,content}` envelope protocol, applyEdit pattern, binary handling |
 | [04-agent-mcp-control.md](04-agent-mcp-control.md) | Feature design | MCP/LM-tools surfaces, tool vocabulary, permission tiers |
 | [05-project-plan.md](05-project-plan.md) | Plan | MVP scope, deviations for robustness/features, milestones M0–M6 |
+| [09-feature-adoption-plan.md](09-feature-adoption-plan.md) | Plan | Feature-adoption plan (viewer/editor parity with the reference) |
+| [10-human-agent-capability-report.md](10-human-agent-capability-report.md) | Report | What ships today for humans (viewers/editors) and agents (commands, LM tools, MCP) — read/write matrix, paths, safety, connection, limits |
 
 ## Operational guides (how to deploy & connect)
 | Doc | Audience | Contents |

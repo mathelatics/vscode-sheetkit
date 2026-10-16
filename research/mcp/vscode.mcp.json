@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "officefiles": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/ABS/PATH/TO/officefiles/out/mcp-standalone.js"]
+    }
+  }
+}

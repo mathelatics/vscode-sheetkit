@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Widget",
+    "qty": 3,
+    "price": 4.5
+  },
+  {
+    "name": "Gadget",
+    "qty": 10,
+    "price": 2.25
+  },
+  {
+    "name": "Gizmo",
+    "qty": 7,
+    "price": 9.99
+  }
+]

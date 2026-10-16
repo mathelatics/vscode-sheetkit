@@ -24,6 +24,8 @@ export class CsvEditorProvider implements vscode.CustomTextEditorProvider {
     bus.on('ready', () => sendDoc('init'));
     bus.on('cell.set', async ({ row, col, value }) => { await ops.applyEdits(docId, [{ op: 'setCell', sheet: 'Sheet1', row, col, value }], 'user') });
     bus.on('row.insert', async ({ row }) => { await ops.applyEdits(docId, [{ op: 'insertRow', sheet: 'Sheet1', row }], 'user') });
+    // Whole-sheet replacement from the grid editor (handles edits + structural add/remove in one atomic op).
+    bus.on('sheet.set', async ({ sheet, rows }) => { await ops.applyEdits(docId, [{ op: 'replaceSheet', sheet, rows }], 'user') });
     bus.on('save', async () => { await ops.save(docId) });
 
     const sub = vscode.workspace.onDidChangeTextDocument(e => {
@@ -36,10 +38,10 @@ export class CsvEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private html(webview: vscode.Webview, configs: any): string {
-    const uri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'out', 'webview', 'assets', 'index.js'));
+    const uri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'out', 'grid', 'assets', 'index.js'));
     return /*html*/`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';">
-<link href="${webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'out', 'webview', 'assets', 'index.css'))}" rel="stylesheet">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data: blob:; font-src ${webview.cspSource} data:;">
+<link href="${webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'out', 'grid', 'assets', 'index.css'))}" rel="stylesheet">
 </head><body><div id="root"></div>
 <script>window.__OFFICEFILES__=${JSON.stringify(configs)};</script>
 <script type="module" src="${uri}"></script></body></html>`;

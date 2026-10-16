@@ -1,14 +1,58 @@
+# ---------------------------------------------------------------------------
+# vscode-sheetkit / OfficeFiles
+# Keep generated + runtime output out of git. Source that is vendored on
+# purpose (e.g. media/vditor/dist) is re-included explicitly below.
+# ---------------------------------------------------------------------------
+
 # Dependencies
 node_modules/
 
-# Build output
+# Vendored reference source clone (source material, not the product)
+rough/
+
+# ---------------------------------------------------------------------------
+# Build output — required in the shipped VS Code extension, but tracked only
+# at deployment time, never committed during development.
+#
+# `vscode:prepublish` runs `npm run build` right before packaging, so the
+# VSIX gets freshly generated out/ + dist/ bundles without them living in git.
+# If a deploy flow needs an artifact committed, force-add it explicitly:
+#   git add -f <path>
+# ---------------------------------------------------------------------------
 out/
+build/
 dist/
 *.vsix
+*.tsbuildinfo
+
+# Re-include vendored runtime assets that intentionally live under dist/
+!vscode-officefiles/media/vditor/dist/
+!vscode-officefiles/media/vditor/dist/**
+
+# Generated vditor markdown bundles (built from vditor/src, copied to resource)
+vscode-officefiles/vditor/dist/
+vscode-officefiles/resource/markdown/dist/
 
 # Source maps
 *.map
 
-# Logs & misc
+# Caches, coverage, temporary files
+.cache/
+coverage/
+*.tmp
+*.temp
+*.bak
+*.orig
+*.local
+
+# Editor / test tooling
+.idea/
+.vscode-test/
+**/test/output/
+
+# Logs & OS junk
 *.log
 .DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini

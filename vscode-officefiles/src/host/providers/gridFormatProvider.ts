@@ -25,6 +25,7 @@ export class GridFormatProvider implements vscode.CustomTextEditorProvider {
     bus.on('ready', () => sendDoc('init'));
     bus.on('cell.set', async ({ row, col, value }) => { await ops.applyEdits(docId, [{ op: 'setCell', sheet: 'json', row, col, value }], 'user'); });
     bus.on('row.insert', async ({ row }) => { await ops.applyEdits(docId, [{ op: 'insertRow', sheet: 'json', row }], 'user'); });
+    bus.on('sheet.set', async ({ sheet, rows }) => { await ops.applyEdits(docId, [{ op: 'replaceSheet', sheet, rows }], 'user'); });
     bus.on('save', async () => { await ops.save(docId); });
 
     const sub = vscode.workspace.onDidChangeTextDocument(e => {
@@ -34,10 +35,10 @@ export class GridFormatProvider implements vscode.CustomTextEditorProvider {
   }
 
   private html(webview: vscode.Webview, configs: any): string {
-    const js = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'out', 'webview', 'assets', 'index.js'));
-    const css = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'out', 'webview', 'assets', 'index.css'));
+    const js = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'out', 'grid', 'assets', 'index.js'));
+    const css = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'out', 'grid', 'assets', 'index.css'));
     return /*html*/`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data: blob:; font-src ${webview.cspSource} data:;">
 <link href="${css}" rel="stylesheet"></head><body><div id="root"></div>
 <script>window.__OFFICEFILES__=${JSON.stringify(configs)};</script>
 <script type="module" src="${js}"></script></body></html>`;

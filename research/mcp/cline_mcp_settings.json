@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "officefiles": {
+      "command": "node",
+      "args": ["/ABS/PATH/TO/officefiles/out/mcp-standalone.js"],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}

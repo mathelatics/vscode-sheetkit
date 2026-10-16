@@ -11,3 +11,45 @@ body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); 
 .of-md [contenteditable]:focus { background: var(--vscode-editor-hoverHighlightBackground, rgba(128,128,128,.1)); }
 .of-code { background: var(--vscode-textCodeBlock-background, rgba(128,128,128,.15)); padding: 8px; font-family: var(--vscode-editor-font-family); }
 .of-loading { padding: 20px; opacity: .7; }
+
+/* Excel-like grid (x-data-spreadsheet) shell + theme bridging */
+html, body, #root { height: 100%; }
+.of-grid-shell { display: flex; flex-direction: column; height: 100vh; }
+.of-toolbar { flex: 0 0 auto; z-index: 5; }
+.of-title { font-weight: 600; }
+.of-spacer { flex: 1 1 auto; }
+.of-grid-host { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+
+/* Map x-data-spreadsheet chrome onto VS Code theme variables so it matches light/dark. */
+#root .x-spreadsheet {
+  --xspreadsheet-bg: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+}
+#root .x-spreadsheet .x-spreadsheet-toolbar,
+#root .x-spreadsheet .x-spreadsheet-bottombar,
+#root .x-spreadsheet .x-spreadsheet-bottombar .x-spreadsheet-menu {
+  background: var(--vscode-editor-background);
+  border-color: var(--vscode-panel-border);
+}
+#root .x-spreadsheet .x-spreadsheet-toolbar .x-spreadsheet-toolbar-btn:hover,
+#root .x-spreadsheet .x-spreadsheet-toolbar .x-spreadsheet-toolbar-btn.active {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,.2));
+}
+#root .x-spreadsheet .x-spreadsheet-bottombar > ul > li {
+  color: var(--vscode-foreground);
+}
+#root .x-spreadsheet .x-spreadsheet-bottombar > ul > li.active {
+  color: var(--vscode-textLink-foreground);
+}
+
+
+/* Markdown (Vditor) shell — fill the editor, let Vditor own the rest. */
+.of-md-shell { position: relative; height: 100vh; display: flex; flex-direction: column; background: var(--vscode-editor-background); }
+.of-md-host { flex: 1 1 auto; min-height: 0; }
+.of-md-host .vditor { border: 0; border-radius: 0; height: 100% !important; background: var(--vscode-editor-background); color: var(--vscode-editor-foreground); }
+.of-md-host .vditor-toolbar { background: var(--vscode-editor-background); border-bottom: 1px solid var(--vscode-panel-border); }
+.of-md-host .vditor-toolbar__item svg { color: var(--vscode-icon-foreground, var(--vscode-foreground)); }
+.of-md-host .vditor-reset { color: var(--vscode-editor-foreground); }
+.of-save-fab { position: absolute; right: 14px; bottom: 14px; z-index: 20; padding: 4px 12px; border: 1px solid var(--vscode-button-border, transparent); background: var(--vscode-button-background); color: var(--vscode-button-foreground); border-radius: 4px; cursor: pointer; }
+.of-save-fab:hover { background: var(--vscode-button-hoverBackground); }

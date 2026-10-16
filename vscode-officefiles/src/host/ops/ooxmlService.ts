@@ -75,9 +75,9 @@ export const ooxml = {
     const zip = await JSZip.loadAsync(bytes);
     let ir: DocumentIR;
     let format: 'xlsx' | 'docx' | 'pptx' | 'epub';
-    if (lower.endsWith('.xlsx')) { ir = await parseXlsxBytes(zip as any); format = 'xlsx'; }
-    else if (lower.endsWith('.docx')) { ir = await parseDocxBytes(zip as any); format = 'docx'; }
-    else if (lower.endsWith('.pptx')) { ir = await parsePptxBytes(zip as any); format = 'pptx'; }
+    if (lower.endsWith('.xlsx') || lower.endsWith('.xlsm')) { ir = await parseXlsxBytes(zip as any); format = 'xlsx'; }
+    else if (lower.endsWith('.docx') || lower.endsWith('.dotx')) { ir = await parseDocxBytes(zip as any); format = 'docx'; }
+    else if (lower.endsWith('.pptx') || lower.endsWith('.pptm')) { ir = await parsePptxBytes(zip as any); format = 'pptx'; }
     else if (lower.endsWith('.epub')) { ir = await parseEpubBytes(zip as any); format = 'epub'; }
     else throw new Error(`unsupported office binary: ${uri.fsPath}`);
     const doc: BinDoc = { id: `bin-${++seq.n}`, uri, format, ir, zip, dirty: false };
@@ -108,6 +108,12 @@ export const ooxml = {
     if (d.format === 'pptx' || d.format === 'epub') throw new Error(`${d.format} is preview-only: agent-readable IR, but no writer yet`);
     const ir = structuredClone(d.ir);
     applyOps(ir, edits);
+    // Grid replacement supplies fresh values for a whole sheet; the old per-cell style/formula
+    // metadata no longer lines up, so drop it (values win over stale formatting).
+    if (edits.some(e => (e as any).op === 'replaceSheet')) {
+      const meta = (ir as any).meta;
+      if (meta?.__sheetMeta) (ir as any).meta.__sheetMeta = {};
+    }
     d.ir = ir;
     d.dirty = true;
     return { applied: edits.length };

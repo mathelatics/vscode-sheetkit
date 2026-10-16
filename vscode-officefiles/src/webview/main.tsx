@@ -2,6 +2,11 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './main.css';
+// x-data-spreadsheet: the MIT grid that vscode-office's Excel view is built on. Loaded as a
+// side-effect UMD bundle (exposes window.x_spreadsheet) + its stylesheet.
+import 'x-data-spreadsheet/dist/xspreadsheet.css';
+import 'x-data-spreadsheet/dist/xspreadsheet.js';
+import Vditor from 'vditor';
 
 const configs = (window as any).__OFFICEFILES__ ?? { route: 'unknown' };
 
@@ -23,63 +28,165 @@ const api = (() => {
   };
 })();
 
+// ---- IR <-> x-data-spreadsheet conversion ---------------------------------
+
+function rowsToXs(rows: any[][]) {
+  const out: Record<number, { cells: Record<number, { text: string }> }> = {};
+  (rows ?? []).forEach((r, ri) => {
+    const cells: Record<number, { text: string }> = {};
+    (r ?? []).forEach((v, ci) => {
+      if (v === null || v === undefined || v === '') return;
+      cells[ci] = { text: String(v) };
+    });
+    if (Object.keys(cells).length) out[ri] = { cells };
+  });
+  return out;
+}
+
+function xsToRows(sheet: any): any[][] {
+  const rows: any[][] = [];
+  const rs = sheet?.rows ?? {};
+  for (const ri of Object.keys(rs)) {
+    const rIdx = Number(ri);
+    const cells = rs[ri]?.cells ?? {};
+    const arr: any[] = [];
+    for (const ci of Object.keys(cells)) {
+      const text = cells[ci]?.text ?? '';
+      arr[Number(ci)] = text === '' ? null : text;
+    }
+    rows[rIdx] = arr;
+  }
+  for (let i = 0; i < rows.length; i++) if (!rows[i]) rows[i] = [];
+  return rows;
+}
+
+function irToSheets(ir: any) {
+  return (ir?.sheets ?? []).map((s: any) => ({ name: s.name, rows: rowsToXs(s.rows) }));
+}
+
+const norm = (rows: any[][]) => JSON.stringify((rows ?? []).map(r => (r ?? []).map(c => (c === undefined ? null : c))));
+
 function Grid() {
-  const [ir, setIr] = React.useState<any>(null);
+  const hostRef = React.useRef<HTMLDivElement>(null);
+  const xsRef = React.useRef<any>(null);
+  const baseline = React.useRef<Array<{ name: string; rows: any[][] }>>([]);
+  const loading = React.useRef(false);
+  const flushTimer = React.useRef<any>(null);
+
+  const applySheets = (ir: any) => {
+    const sheets = irToSheets(ir);
+    baseline.current = sheets.map((s: any) => ({ name: s.name, rows: xsToRows(s as any) }));
+    loading.current = true;
+    xsRef.current?.loadData(sheets.length ? sheets : [{ name: 'Sheet1', rows: {} }]);
+    loading.current = false;
+  };
+
+  const flush = () => {
+    if (flushTimer.current) { clearTimeout(flushTimer.current); flushTimer.current = null; }
+    const inst = xsRef.current;
+    if (!inst) return;
+    const data: any[] = inst.getData?.() ?? [];
+    data.forEach((sheet: any, i: number) => {
+      const rows = xsToRows(sheet);
+      const prev = baseline.current[i];
+      const name = sheet?.name ?? prev?.name ?? `Sheet${i + 1}`;
+      if (!prev || norm(prev.rows) !== norm(rows)) {
+        baseline.current[i] = { name, rows };
+        api.emit('sheet.set', { sheet: name, rows });
+      }
+    });
+  };
+
   React.useEffect(() => {
+    const Spreadsheet = (window as any).x_spreadsheet;
+    if (!Spreadsheet || !hostRef.current) return;
+    const el = hostRef.current;
+    const inst = Spreadsheet(el, {
+      mode: 'edit',
+      showToolbar: true,
+      showGrid: true,
+      showContextmenu: true,
+      showBottomBar: true,
+      view: { height: () => el.clientHeight, width: () => el.clientWidth },
+    });
+    xsRef.current = inst;
+    inst.change(() => {
+      if (loading.current) return;
+      if (flushTimer.current) clearTimeout(flushTimer.current);
+      flushTimer.current = setTimeout(flush, 200);
+    });
+
     api.emit('ready');
-    const off = api.on("doc:update", (p: any) => setIr(p.ir)); return () => off();
+    const off = api.on('doc:update', (p: any) => {
+      const incoming = (p.ir?.sheets ?? []).map((s: any) => ({ name: s.name, rows: s.rows }));
+      const same = incoming.length === baseline.current.length
+        && incoming.every((s: any, i: number) => norm(s.rows) === norm(baseline.current[i]?.rows ?? []));
+      if (same) return; // echo of our own edit — keep selection/focus
+      applySheets(p.ir);
+    });
+    return () => { off(); if (flushTimer.current) clearTimeout(flushTimer.current); };
   }, []);
-  if (!ir) return <div className="of-loading">Loading…</div>;
-  const sheet = ir.sheets?.[0];
-  const edit = (row: number, col: number, value: string) =>
-    api.emit('cell.set', { row, col, value: value === '' ? null : isNaN(Number(value)) ? value : Number(value) });
+
   return (
-    <div className="of-grid">
+    <div className="of-grid-shell">
       <div className="of-toolbar">
-        <span>{(window as any).__OFFICEFILES__.fileName}</span>
-        <button onClick={() => api.emit('row.insert', { row: sheet.rows.length })}>+ Row</button>
+        <span className="of-title">{configs.fileName}</span>
+        <span className="of-spacer" />
         <button onClick={() => api.emit('save')}>Save</button>
       </div>
-      <table>
-        <tbody>
-          {sheet.rows.map((r: any[], ri: number) => (
-            <tr key={ri}>{r.map((c: any, ci: number) => (
-              <td key={ci} contentEditable suppressContentEditableWarning
-                onBlur={(e: any) => edit(ri, ci, e.target.innerText.trim())}>{c ?? ''}</td>
-            ))}</tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="of-grid-host" ref={hostRef} />
     </div>
   );
 }
 
 function MarkdownView() {
-  const [ir, setIr] = React.useState<any>(null);
+  const hostRef = React.useRef<HTMLDivElement>(null);
+  const vdRef = React.useRef<any>(null);
+  const loading = React.useRef(false);
+  const lastSent = React.useRef('');
+  const flushTimer = React.useRef<any>(null);
+
   React.useEffect(() => {
-    api.emit('ready');
-    const off = api.on("doc:update", (p: any) => setIr(p.ir)); return () => off();
-  }, []);
-  if (!ir) return <div className="of-loading">Loading…</div>;
-  const render = (b: any, i: number) => {
-    const editable = (text: string) => ({
-      contentEditable: true as any, suppressContentEditableWarning: true,
-      onBlur: (e: any) => api.emit('block.replace', { index: i, block: { ...b, text: e.target.innerText } }),
+    const el = hostRef.current;
+    if (!el) return;
+    const mode = configs.editMode === 'source' ? 'sv' : 'ir';
+    const vd = new Vditor(el, {
+      mode,
+      cdn: configs.vditorCdn,
+      height: '100%',
+      value: '',
+      cache: { enable: false },
+      toolbarConfig: { pin: true },
+      counter: { enable: true },
+      outline: { enable: false, position: 'left' },
+      after: () => { vdRef.current = vd; api.emit('ready'); },
+      input: () => {
+        if (loading.current) return;
+        if (flushTimer.current) clearTimeout(flushTimer.current);
+        flushTimer.current = setTimeout(() => {
+          lastSent.current = vdRef.current?.getValue?.() ?? '';
+          api.emit('md.set', { markdown: lastSent.current });
+        }, 250);
+      },
     });
-    switch (b.type) {
-      case 'heading': return React.createElement(`h${Math.min(b.level ?? 1, 6)}`, editable(b.text), b.text);
-      case 'code': return <pre {...editable(b.text)} className="of-code">{b.text}</pre>;
-      case 'quote': return <blockquote {...editable(b.text)}>{b.text}</blockquote>;
-      case 'list': return <ul>{(b.items ?? []).map((it: string, j: number) => <li key={j}>{it}</li>)}</ul>;
-      default: return <p {...editable(b.text)}>{b.text}</p>;
-    }
-  };
+    vdRef.current = vd;
+
+    const off = api.on('md:update', (p: any) => {
+      const inst = vdRef.current;
+      if (!inst?.setValue) return;
+      if ((p.markdown ?? '') === lastSent.current) return; // our own echo — don't reset the caret
+      if ((p.markdown ?? '') === (inst.getValue?.() ?? '')) return;
+      loading.current = true;
+      inst.setValue(p.markdown ?? '');
+      loading.current = false;
+    });
+    return () => { off(); if (flushTimer.current) clearTimeout(flushTimer.current); };
+  }, []);
+
   return (
-    <div className="of-md">
-      <div className="of-toolbar"><span>{(window as any).__OFFICEFILES__.fileName}</span>
-        <button onClick={() => api.emit('block.append', { block: { type: 'paragraph', text: 'New paragraph' } })}>+ Block</button>
-        <button onClick={() => api.emit('save')}>Save</button></div>
-      {ir.blocks.map(render)}
+    <div className="of-md-shell">
+      <div className="of-md-host" ref={hostRef} />
+      <button className="of-save-fab" onClick={() => api.emit('save')}>Save</button>
     </div>
   );
 }

@@ -7,7 +7,9 @@ import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { ops } from '../ops/documentOps';
+import { ops, openDocument } from '../ops/documentOps';
+import { extractPdfText } from '../ops/ooxmlService';
+import { capabilityReport } from '../../core/codecs/registry';
 
 export function socketPath(): string {
   return process.platform === 'win32'
@@ -16,11 +18,22 @@ export function socketPath(): string {
 }
 
 const methods: Record<string, (params: any) => any | Promise<any>> = {
+  'capabilities': () => ({ mode: 'live', ...capabilityReport() }),
   'documents.list': () => ops.listDocuments(),
   'documents.read': (p) => ops.read(p.docId ?? p.uri, p.range),
   'documents.search': (p) => ops.search(p.query, !!p.regex),
-  'documents.applyEdits': (p) => ops.applyEdits(p.docId ?? p.uri, p.edits ?? [], 'mcp-ipc'),
+  'documents.applyEdits': (p) => ops.applyEdits(p.docId ?? p.uri, p.edits ?? [], p.actor ?? 'mcp-ipc'),
   'documents.save': (p) => ops.save(p.docId ?? p.uri),
+  'documents.open': async (p) => {
+    const uri = vscode.Uri.file(String(p.path ?? p.uri));
+    await openDocument(uri);
+    return ops.listDocuments().find(d => d.uri === uri.toString()) ?? { opened: uri.toString() };
+  },
+  'pdf.extractText': async (p) => {
+    const uri = vscode.Uri.file(String(p.path ?? p.uri));
+    const bytes = await vscode.workspace.fs.readFile(uri);
+    return extractPdfText(bytes);
+  },
 };
 
 /** Start the server; returns a Disposable that cleans up socket file. */

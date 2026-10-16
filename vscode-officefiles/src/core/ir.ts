@@ -44,6 +44,7 @@ export type EditOp =
   | { op: 'insertRow'; sheet?: string; row: number; values?: CellValue[] }
   | { op: 'deleteRow'; sheet?: string; row: number }
   | { op: 'insertColumn'; sheet?: string; col: number; header?: string; values?: CellValue[] }
+  | { op: 'replaceSheet'; sheet?: string; rows: CellValue[][] }
   | { op: 'appendBlock'; block: BlockIR }
   | { op: 'insertBlock'; after?: number; block: BlockIR }   // insert at end if `after` omitted
   | { op: 'replaceBlock'; index: number; block: BlockIR }
@@ -52,6 +53,18 @@ export type EditOp =
 
 export function isTableDoc(ir: DocumentIR): ir is TableDocIR { return ir.kind === 'table'; }
 export function isTextDoc(ir: DocumentIR): ir is DocIR { return ir.kind === 'document'; }
+
+/** Strip internal side-channel fields (__xml, __runs, __sheetMeta, __sheetPaths) before sending
+ *  an IR over any agent transport. Shared by the extension host and the headless MCP server. */
+export function publicIr(ir: DocumentIR): DocumentIR {
+  return JSON.parse(JSON.stringify(ir, (k, v) => (k === '__xml' || k === '__runs' || k === '__sheetMeta' || k === '__sheetPaths') ? undefined : v));
+}
+
+/** The typed edit vocabulary, advertised to agents via capability discovery. */
+export const EDIT_OPS = [
+  'setCell', 'insertRow', 'deleteRow', 'insertColumn', 'replaceSheet',
+  'appendBlock', 'insertBlock', 'replaceBlock', 'deleteBlock', 'replaceText',
+] as const;
 
 /** Apply ops to an IR in-place (clone first if immutability needed). Throws on invalid ranges. */
 export function applyOps(ir: DocumentIR, ops: EditOp[]): DocumentIR {
@@ -93,6 +106,11 @@ function applyTableOp(doc: TableDocIR, o: EditOp) {
     case 'insertColumn': {
       const s = findSheet(doc, o);
       s.rows.forEach((r, i) => r.splice(o.col, 0, i === 0 && o.header ? o.header : (o.values?.[i] ?? null)));
+      break;
+    }
+    case 'replaceSheet': {
+      const s = findSheet(doc, o);
+      s.rows = o.rows.map(r => [...r]);
       break;
     }
     case 'replaceText': {

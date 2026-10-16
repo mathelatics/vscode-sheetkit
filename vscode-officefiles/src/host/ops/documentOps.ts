@@ -1,9 +1,10 @@
 // DocumentOps: the single capability registry used by webview bus, commands, LM tools and MCP server.
 // Deviation from vscode-office: all logic lives here (testable, no Handler closures), providers are thin.
 import * as vscode from 'vscode';
-import { DocumentIR, EditOp, applyOps, isTableDoc, isTextDoc } from '../../core/ir';
+import { DocumentIR, EditOp, applyOps, isTableDoc, isTextDoc, publicIr } from '../../core/ir';
 import { formatForPath } from '../../core/codecs/registry';
 import { ooxml } from './ooxmlService';
+export { publicIr };
 
 export interface ManagedDoc {
   id: string;
@@ -130,21 +131,15 @@ export const ops = {
   onRegistryChange(cb: Listener) { return registry.onChange(cb); },
 };
 
-/** Strip internal side-channel fields (__xml, __runs) before sending IR over any agent transport. */
-export function publicIr(ir: DocumentIR): DocumentIR {
-  const clone = JSON.parse(JSON.stringify(ir, (k, v) => (k === '__xml' || k === '__runs' || k === '__sheetMeta' || k === '__sheetPaths') ? undefined : v));
-  return clone;
-}
-
 /** Open a file in our custom editor (used by office.open agent tool). */
 export async function openDocument(uri: vscode.Uri, viewType?: string) {
   const lower = uri.fsPath.toLowerCase();
   // Binary office formats: host-side zip model, no TextDocument involved.
-  if (/\.(xlsx|docx|pdf|pptx|epub)$/.test(lower)) {
+  if (/\.(xlsx|xlsm|docx|dotx|pptx|pptm|pdf|epub)$/.test(lower)) {
     await ooxml.open(uri);
-    const vt = /\.xlsx$/.test(lower) ? 'officefiles.xlsxViewer'
-      : /\.docx$/.test(lower) ? 'officefiles.docxViewer'
-      : /\.pptx$/.test(lower) ? 'officefiles.pptxViewer'
+    const vt = /\.(xlsx|xlsm)$/.test(lower) ? 'officefiles.xlsxViewer'
+      : /\.(docx|dotx)$/.test(lower) ? 'officefiles.docxViewer'
+      : /\.(pptx|pptm)$/.test(lower) ? 'officefiles.pptxViewer'
       : /\.epub$/.test(lower) ? 'officefiles.epubViewer'
       : 'officefiles.pdfViewer';
     try { await vscode.commands.executeCommand('vscode.openWith', uri, vt); }
