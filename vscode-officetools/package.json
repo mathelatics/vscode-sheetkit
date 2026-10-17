@@ -26,8 +26,8 @@
     "url": "https://github.com/mathelatics/vscode-sheetkit"
   },
   "activationEvents": [
-    "onCustomEditor:cweijan.markdownViewer",
-    "onCustomEditor:cweijan.officeViewer"
+    "onCustomEditor:officetools.markdownEditor",
+    "onCustomEditor:officetools.pdfViewer"
   ],
   "main": "./out/extension.js",
   "browser": "./out/extension.web.js",
@@ -69,7 +69,7 @@
     },
     "customEditors": [
       {
-        "viewType": "cweijan.markdownViewer",
+        "viewType": "officetools.markdownEditor",
         "displayName": "Markdown Editor",
         "selector": [
           {
@@ -93,7 +93,7 @@
         ]
       },
       {
-        "viewType": "cweijan.officeViewer",
+        "viewType": "officetools.pdfViewer",
         "displayName": "PDF Viewer",
         "selector": [
           {
@@ -107,12 +107,12 @@
         "title": "Markdown",
         "order": 1,
         "properties": {
-          "vscode-office.preventMacOptionKey": {
+          "officetools.preventMacOptionKey": {
             "type": "boolean",
             "default": true,
             "description": "Prevent MacOS option key in the markdown editor."
           },
-          "vscode-office.editorTheme": {
+          "officetools.editorTheme": {
             "type": "string",
             "enum": [
               "Auto",
@@ -129,7 +129,7 @@
             "default": "Auto",
             "markdownDescription": "The theme for the Markdown editor."
           },
-          "vscode-office.codeMirrorTheme": {
+          "officetools.codeMirrorTheme": {
             "type": "string",
             "enum": [
               "Auto",
@@ -147,7 +147,7 @@
             "default": "Auto",
             "markdownDescription": "CodeMirror syntax theme for code blocks in the Markdown editor."
           },
-          "vscode-office.mermaidTheme": {
+          "officetools.mermaidTheme": {
             "type": "string",
             "enum": [
               "Auto",
@@ -163,7 +163,7 @@
             "default": "Auto",
             "markdownDescription": "Mermaid diagram theme in the Markdown editor. Auto follows the editor theme."
           },
-          "vscode-office.editMode": {
+          "officetools.editMode": {
             "type": "string",
             "enum": [
               "wysiwyg",
@@ -172,22 +172,22 @@
             "default": "wysiwyg",
             "markdownDescription": "Default edit mode for the Markdown editor."
           },
-          "vscode-office.restoreViewState": {
+          "officetools.restoreViewState": {
             "type": "boolean",
             "default": true,
             "markdownDescription": "Restore caret focus when opening a Markdown file. Scroll position is always restored."
           },
-          "vscode-office.workspacePathAsImageBasePath": {
+          "officetools.workspacePathAsImageBasePath": {
             "type": "boolean",
             "default": false,
             "description": "Using workspace path as markdown image base path."
           },
-          "vscode-office.pasteImageToWorkspacePath": {
+          "officetools.pasteImageToWorkspacePath": {
             "type": "boolean",
             "default": false,
             "description": "Paste markdown images into the workspace path and insert image links with a leading slash."
           },
-          "vscode-office.pasterImgPath": {
+          "officetools.pasterImgPath": {
             "type": "string",
             "default": "image/${fileName}/${now}.${ext}",
             "description": "Markdown paste image path, variables: workspaceDir, fileName, now, date (YYYYMMDD), uuid, ext (file extension)."
@@ -198,11 +198,11 @@
         "title": "Markdown PDF",
         "order": 2,
         "properties": {
-          "vscode-office.chromiumPath": {
+          "officetools.chromiumPath": {
             "type": "string",
             "description": "Set the chromium browser location for exporting markdown pdf."
           },
-          "vscode-office.puppeteerArgs": {
+          "officetools.puppeteerArgs": {
             "type": "array",
             "items": {
               "type": "string"
@@ -210,7 +210,7 @@
             "default": [],
             "description": "Additional arguments to pass to Puppeteer/Chromium when exporting PDF. Example: [\"--no-sandbox\", \"--disable-setuid-sandbox\"] for Linux servers running as root."
           },
-          "vscode-office.pdfMarginTop": {
+          "officetools.pdfMarginTop": {
             "type": "integer",
             "default": 25,
             "description": "Printed pdf default top margin."
@@ -221,7 +221,7 @@
         "title": "Telemetry",
         "order": 99,
         "properties": {
-          "vscode-office.enableTelemetry": {
+          "officetools.enableTelemetry": {
             "type": "boolean",
             "default": true,
             "tags": [

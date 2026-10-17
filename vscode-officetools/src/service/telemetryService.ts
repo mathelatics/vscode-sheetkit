@@ -37,7 +37,7 @@ export class TelemetryService {
         if (!this.reporter || !env.isTelemetryEnabled) {
             return false;
         }
-        return workspace.getConfiguration('vscode-office').get<boolean>('enableTelemetry', true);
+        return workspace.getConfiguration('officetools').get<boolean>('enableTelemetry', true);
     }
 
     private getCommonProperties(): Record<string, string> {

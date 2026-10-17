@@ -12,7 +12,7 @@ export class OfficeViewerProvider implements vscode.CustomReadonlyEditorProvider
 
 	bindCustomEditors(viewOption: { webviewOptions: vscode.WebviewPanelOptions }) {
 		return [
-			vscode.window.registerCustomEditorProvider('cweijan.officeViewer', this, viewOption),
+			vscode.window.registerCustomEditorProvider('officetools.pdfViewer', this, viewOption),
 		];
 	}
 
