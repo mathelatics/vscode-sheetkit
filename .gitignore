@@ -6,6 +6,9 @@
 
 # Dependencies
 node_modules/
+# Local build crutch: node_modules in vscode-officetools is symlinked to a sibling
+# checkout during development; match it as a symlink too.
+vscode-officetools/node_modules
 
 # Vendored reference source clone (source material, not the product)
 rough/
@@ -32,6 +35,11 @@ dist/
 # Generated vditor markdown bundles (built from vditor/src, copied to resource)
 vscode-officefiles/vditor/dist/
 vscode-officefiles/resource/markdown/dist/
+
+# vscode-officetools vendors the prebuilt vditor markdown bundle + pdf.js runtime
+# (no vditor/pdf build step) — keep those committed.
+!vscode-officetools/resource/markdown/dist/
+!vscode-officetools/resource/markdown/dist/**
 
 # Source maps
 *.map
