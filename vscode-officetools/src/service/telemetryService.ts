@@ -3,10 +3,15 @@ import { env, ExtensionContext, workspace } from 'vscode';
 import { fileTypeFromPath, resolveOfficeViewType } from './officeViewType';
 
 /**
- * Application Insights connection string.
- * See docs/telemetry.md for Azure setup steps.
+ * Telemetry is intentionally DISABLED in this build.
+ *
+ * OfficeTools currently ships with no Application Insights connection string, so
+ * `TelemetryReporter` is never constructed and no events ever leave the machine.
+ *
+ * To enable telemetry for your own publisher account, set this to your own
+ * connection string and restore the `officetools.enableTelemetry` default.
  */
-const TELEMETRY_CONNECTION_STRING = 'InstrumentationKey=49047faa-e1fe-4428-90b7-d4a3730299d8;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=3b475201-7779-41cb-bce0-8a05b81e3c21';
+const TELEMETRY_CONNECTION_STRING = '';
 
 export class TelemetryService {
     private static instance: TelemetryService | undefined;

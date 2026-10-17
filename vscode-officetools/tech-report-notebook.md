@@ -23,11 +23,11 @@ OfficeTools is a deliberately small extension carved out of the much larger
 (agent/MCP tooling, CSV/XLSX/DOCX/PPTX/EPUB/SVG/images/PSD/XMind/Parquet/archives/fonts/ICNS,
 HTML preview, HTTP client, Git history, icon/colour themes).
 
-| Format | Editor id | Kind | Priority |
-| --- | --- | --- | --- |
-| PDF | `officetools.pdfViewer` | read-only viewer (pdf.js) | default for `*.pdf` |
-| Markdown | `officetools.markdownEditor` | WYSIWYG/IR editor + preview (Vditor) | default for `*.md`, `*.markdown` |
-| Markdown | `officetools.markdownPreview` | same provider, preview entry point | on demand |
+| Format   | Editor id                       | Kind                                 | Priority                            |
+| -------- | ------------------------------- | ------------------------------------ | ----------------------------------- |
+| PDF      | `officetools.pdfViewer`       | read-only viewer (pdf.js)            | default for`*.pdf`                |
+| Markdown | `officetools.markdownEditor`  | WYSIWYG/IR editor + preview (Vditor) | default for`*.md`, `*.markdown` |
+| Markdown | `officetools.markdownPreview` | same provider, preview entry point   | on demand                           |
 
 **Design goals**
 
@@ -47,18 +47,18 @@ Open any `*.pdf` — it renders in the built-in viewer (no "open with" step need
 
 **Controls (pdf.js viewer + OfficeTools additions)**
 
-| Group | What you can do |
-| --- | --- |
-| Navigation | First/previous/next/last page, page-number box, thumbnails sidebar, document outline sidebar |
-| Zoom | Zoom in/out, fit page, fit width, automatic, actual size, and a **custom scale dropdown** (`scaleSelectContainer`) |
-| Page layout | Rotate CW/CCW, vertical / horizontal / wrapped scrolling, single / odd / even spreads, presentation mode |
-| Cursor | Hand (pan) vs. select-text tool |
-| Find | In-document search with match-case, whole-word, highlight-all, next/previous, result count |
-| Panels | Thumbnails, outline, attachments, layers, and **document properties** (title, author, subject, keywords, dates, creator, producer, version, page size, linearized, file size, page count) |
-| Files | Download, open file, print |
-| Sidebar | Drag the `sidebarResizer` to resize; width + open state persist in `localStorage` (`vscode-office.pdf.sidebarWidth`, `vscode-office.pdf.sidebarOpen`) |
-| Theme | **Theme adapt** (follow VS Code colours) — toggle via the toolbar button or `Ctrl/Cmd+Shift+L`; **Dark mode** for the PDF — `Ctrl/Cmd+L`. Both persist in `localStorage` |
-| Security | Password prompt dialog for encrypted PDFs; graceful error overlay for broken files |
+| Group       | What you can do                                                                                                                                                                                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Navigation  | First/previous/next/last page, page-number box, thumbnails sidebar, document outline sidebar                                                                                                   |
+| Zoom        | Zoom in/out, fit page, fit width, automatic, actual size, and a**custom scale dropdown** (`scaleSelectContainer`)                                                                      |
+| Page layout | Rotate CW/CCW, vertical / horizontal / wrapped scrolling, single / odd / even spreads, presentation mode                                                                                       |
+| Cursor      | Hand (pan) vs. select-text tool                                                                                                                                                                |
+| Find        | In-document search with match-case, whole-word, highlight-all, next/previous, result count                                                                                                     |
+| Panels      | Thumbnails, outline, attachments, layers, and**document properties** (title, author, subject, keywords, dates, creator, producer, version, page size, linearized, file size, page count) |
+| Files       | Download, open file, print                                                                                                                                                                     |
+| Sidebar     | Drag the`sidebarResizer` to resize; width + open state persist in `localStorage` (`vscode-office.pdf.sidebarWidth`, `vscode-office.pdf.sidebarOpen`)                                   |
+| Theme       | **Theme adapt** (follow VS Code colours) — toggle via the toolbar button or `Ctrl/Cmd+Shift+L`; **Dark mode** for the PDF — `Ctrl/Cmd+L`. Both persist in `localStorage`   |
+| Security    | Password prompt dialog for encrypted PDFs; graceful error overlay for broken files                                                                                                             |
 
 The viewer is **read-only** by design; it can never modify the file.
 
@@ -67,6 +67,7 @@ The viewer is **read-only** by design; it can never modify the file.
 Opening `*.md` / `*.markdown` gives you a full Markdown studio.
 
 **Writing**
+
 - Two modes: **WYSIWYG** and **IR** (instant rendering). Switch from the toolbar or `officetools.editMode`.
 - Outline panel on the left for navigation.
 - Toolbar: outline, headings, bold, italic, strikethrough, link, lists, ordered lists,
@@ -82,6 +83,7 @@ Opening `*.md` / `*.markdown` gives you a full Markdown studio.
   document using the `officetools.pasterImgPath` template and inserted as Markdown.
 
 **Saving & sync**
+
 - The Markdown text document is the **single source of truth**. The webview never owns state;
   it sends Markdown back through a `WorkspaceEdit`, so:
   - native undo/redo and dirty-state work;
@@ -91,6 +93,7 @@ Opening `*.md` / `*.markdown` gives you a full Markdown studio.
   re-parsing storms.
 
 **Context menu (right-click)**
+
 - **AI Polish** (rewrite/improve the selection) — see §2.4.
 - Copy, Copy as HTML, Copy as Plain Text, Paste, Insert Image.
 - **Export PDF**, **Export PDF (without outline)**, **Export DOCX**, **Export HTML**.
@@ -101,10 +104,10 @@ themes are configurable independently.
 
 ### 2.3 Commands & keybindings
 
-| Command | Title | Default key | When |
-| --- | --- | --- | --- |
-| `office.markdown.switch` | Switch Markdown editor | `Ctrl+Alt+E` / `⌘⌃E` | Markdown text editor focused |
-| `office.markdown.paste` | Enhance paste in Markdown | `Ctrl+V` / `⌘V` | Markdown text editor focused (desktop) |
+| Command                    | Title                     | Default key                | When                                   |
+| -------------------------- | ------------------------- | -------------------------- | -------------------------------------- |
+| `office.markdown.switch` | Switch Markdown editor    | `Ctrl+Alt+E` / `⌘⌃E` | Markdown text editor focused           |
+| `office.markdown.paste`  | Enhance paste in Markdown | `Ctrl+V` / `⌘V`       | Markdown text editor focused (desktop) |
 
 `office.markdown.switch` is also offered from the editor title bar (the ✎ button) for
 `.md`/`.markdown`. Internally it opens the file with `officetools.markdownEditor` (or back to
@@ -128,31 +131,31 @@ All settings live under the `officetools.*` namespace.
 
 **Markdown**
 
-| Setting | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `officetools.editMode` | `wysiwyg` \| `ir` | `wysiwyg` | Default editing mode |
-| `officetools.editorTheme` | enum | `Auto` | Editor chrome theme (`Light`, `Solarized`, `One Dark`, `Dracula`, …) |
-| `officetools.codeMirrorTheme` | enum | `Auto` | Code-block syntax theme |
-| `officetools.mermaidTheme` | enum | `Auto` | Mermaid diagram theme |
-| `officetools.restoreViewState` | boolean | `true` | Restore caret focus on open (scroll is always restored) |
-| `officetools.preventMacOptionKey` | boolean | `true` | Don't let the macOS Option key insert specials |
-| `officetools.workspacePathAsImageBasePath` | boolean | `false` | Resolve relative images from the workspace root |
-| `officetools.pasteImageToWorkspacePath` | boolean | `false` | Write pasted images into the workspace with a leading `/` |
-| `officetools.pasterImgPath` | string | `image/${fileName}/${now}.${ext}` | Image path template (`workspaceDir`, `fileName`, `now`, `date`, `uuid`, `ext`) |
+| Setting                                      | Type                  | Default                             | Meaning                                                                                    |
+| -------------------------------------------- | --------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| `officetools.editMode`                     | `wysiwyg` \| `ir` | `wysiwyg`                         | Default editing mode                                                                       |
+| `officetools.editorTheme`                  | enum                  | `Auto`                            | Editor chrome theme (`Light`, `Solarized`, `One Dark`, `Dracula`, …)              |
+| `officetools.codeMirrorTheme`              | enum                  | `Auto`                            | Code-block syntax theme                                                                    |
+| `officetools.mermaidTheme`                 | enum                  | `Auto`                            | Mermaid diagram theme                                                                      |
+| `officetools.restoreViewState`             | boolean               | `true`                            | Restore caret focus on open (scroll is always restored)                                    |
+| `officetools.preventMacOptionKey`          | boolean               | `true`                            | Don't let the macOS Option key insert specials                                             |
+| `officetools.workspacePathAsImageBasePath` | boolean               | `false`                           | Resolve relative images from the workspace root                                            |
+| `officetools.pasteImageToWorkspacePath`    | boolean               | `false`                           | Write pasted images into the workspace with a leading`/`                                 |
+| `officetools.pasterImgPath`                | string                | `image/${fileName}/${now}.${ext}` | Image path template (`workspaceDir`, `fileName`, `now`, `date`, `uuid`, `ext`) |
 
 **Markdown → PDF export**
 
-| Setting | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `officetools.chromiumPath` | string | `""` | Path to a Chromium-based browser (auto-detected otherwise) |
-| `officetools.puppeteerArgs` | string[] | `[]` | Extra launch args (e.g. `["--no-sandbox"]`) |
-| `officetools.pdfMarginTop` | integer | `25` | Top margin for the generated PDF |
+| Setting                       | Type     | Default | Meaning                                                    |
+| ----------------------------- | -------- | ------- | ---------------------------------------------------------- |
+| `officetools.chromiumPath`  | string   | `""`  | Path to a Chromium-based browser (auto-detected otherwise) |
+| `officetools.puppeteerArgs` | string[] | `[]`  | Extra launch args (e.g.`["--no-sandbox"]`)               |
+| `officetools.pdfMarginTop`  | integer  | `25`  | Top margin for the generated PDF                           |
 
-**Telemetry**
+**Telemetry** (currently disabled)
 
-| Setting | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `officetools.enableTelemetry` | boolean | `true` | Anonymous usage events; also respects the global VS Code telemetry setting |
+| Setting                         | Type    | Default  | Meaning                                                                    |
+| ------------------------------- | ------- | -------- | -------------------------------------------------------------------------- |
+| `officetools.enableTelemetry` | boolean | `false` | Anonymous usage events; also respects the global VS Code telemetry setting. **Inactive** — no connection string is configured, so nothing is ever sent |
 
 ---
 
@@ -204,10 +207,10 @@ Webview (sandboxed iframe)
 
 ### 4.2 Two provider types
 
-| Provider | VS Code interface | File | Why |
-| --- | --- | --- | --- |
-| `OfficeViewerProvider` | `CustomReadonlyEditorProvider` | `src/provider/officeViewerProvider.ts` | PDFs are binary/immutable — no text-document round trip needed |
-| `MarkdownEditorProvider` | `CustomTextEditorProvider` | `src/provider/markdownEditorProvider.ts` | Markdown is a real `TextDocument`; the editor must cooperate with undo/dirty/other tabs |
+| Provider                   | VS Code interface                | File                                       | Why                                                                                      |
+| -------------------------- | -------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `OfficeViewerProvider`   | `CustomReadonlyEditorProvider` | `src/provider/officeViewerProvider.ts`   | PDFs are binary/immutable — no text-document round trip needed                          |
+| `MarkdownEditorProvider` | `CustomTextEditorProvider`     | `src/provider/markdownEditorProvider.ts` | Markdown is a real`TextDocument`; the editor must cooperate with undo/dirty/other tabs |
 
 ### 4.3 Entry points
 
@@ -227,7 +230,7 @@ src/
   service/
     markdownService.ts             export (pdf/docx/html) + clipboard image + editor switch
     viewerSettingsService.ts       shared per-workspace editor settings file
-    telemetryService.ts            Application Insights wrapper (opt-out)
+    telemetryService.ts            Application Insights wrapper (disabled in this build)
     officeViewType.ts              suffix → view-type/telemetry helpers
     autoClearCacheStorage.ts       one-shot legacy webview storage migration
     ai/customAIClient.ts           OpenAI/Anthropic/Gemini/Ollama streaming client
@@ -267,39 +270,39 @@ attaches `panel.webview.onDidReceiveMessage` and exposes `.on(event, cb)` / `.em
 
 #### PDF channel (`officetools.pdfViewer`)
 
-| Direction | Message | Payload | Notes |
-| --- | --- | --- | --- |
-| webview → host | `init` | – | Sent once on `window.load` |
-| host → webview | `open` | `{ ext, path, fileName }` or `{ ext, fileName, buffer }` or `{ error }` | `path` = webview URL for real files; `buffer` = bytes for virtual docs |
-| webview → host | `editInVSCode` | `full: boolean` | Reserved; handled by the host but not emitted by the bundled pdf.js viewer |
-| webview → host | `developerTool` | – | Toggle DevTools (also `F12`) |
-| webview → host | `openSponsor` / `openExternal` | url | External links |
-| host → webview | `fileChange` (internal) | – | Emitted by the file watcher bound in `Handler.bind` |
+| Direction       | Message                            | Payload                                                                       | Notes                                                                      |
+| --------------- | ---------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| webview → host | `init`                           | –                                                                            | Sent once on`window.load`                                                |
+| host → webview | `open`                           | `{ ext, path, fileName }` or `{ ext, fileName, buffer }` or `{ error }` | `path` = webview URL for real files; `buffer` = bytes for virtual docs |
+| webview → host | `editInVSCode`                   | `full: boolean`                                                             | Reserved; handled by the host but not emitted by the bundled pdf.js viewer |
+| webview → host | `developerTool`                  | –                                                                            | Toggle DevTools (also`F12`)                                              |
+| webview → host | `openSponsor` / `openExternal` | url                                                                           | External links                                                             |
+| host → webview | `fileChange` (internal)          | –                                                                            | Emitted by the file watcher bound in`Handler.bind`                       |
 
 > **Critical invariant:** the viewer renders **nothing** until it receives `open`. The
 > `init → open` handshake is the single most fragile part of the PDF path — see §9.1.
 
 #### Markdown channel (`officetools.markdownEditor`)
 
-| Direction | Message | Payload | Notes |
-| --- | --- | --- | --- |
-| webview → host | `init` | – | Host replies with `open` |
-| host → webview | `open` | `{ content, rootPath, workspaceBaseUrl, documentCacheId, pendingFragment, shouldRestoreFocus, config, viewerSettings }` | Initial render (`fileName` is read by the webview but not sent upstream → falls back to `Note`) |
-| webview → host | `save` | markdown | Debounced 400 ms write |
-| webview → host | `doSave` | markdown | Immediate write then `workbench.action.files.save` |
-| host → webview | `update` | markdown | External/agent edit pushed in |
-| webview → host | `img` / `insertImage` | image data / – | Save image, reply `insertImageMarkdown` |
-| host → webview | `insertImageMarkdown` | `![…](…)` | Insert into editor |
-| webview → host | `export` | `{ type: 'pdf'\|'docx'\|'html', withoutOutline? }` | Triggers `MarkdownService.exportMarkdown` |
-| webview → host | `command` | command id | e.g. `office.markdown.paste` |
-| webview → host | `openLink` | uri / `wiki:…` | Resolve + open local/remote/URL |
-| host ↔ webview | `openLinkError`, `gotoBlock`, `markdownConfig`, `viewerSettings`, `viewerSettingsSync` | – | Links, config sync, settings sync |
-| webview → host | `editorTheme`, `codeMirrorTheme`, `mermaidTheme`, `editMode` | value | Persisted via `Global.updateConfig` |
-| webview → host | `syncViewerSettings`, `editViewerSettings` | settings | Shared editor settings file |
-| webview → host | `queryAIAvailable`, `queryVSCodeModels`, `aiPolish`, `aiPolishCancel` | – | AI Polish |
-| host → webview | `aiAvailable`, `vscodeModels`, `aiPolishChunk`, `aiPolishEnd` | – | AI Polish streaming |
-| webview → host | `telemetry` | `{ event, properties }` | Opt-out telemetry |
-| webview → host | `editInVSCode`, `showInFolder`, `developerTool`, `openSponsor`, `openExternal` | – | Standard actions |
+| Direction       | Message                                                                                          | Payload                                                                                                                   | Notes                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| webview → host | `init`                                                                                         | –                                                                                                                        | Host replies with`open`                                                                            |
+| host → webview | `open`                                                                                         | `{ content, rootPath, workspaceBaseUrl, documentCacheId, pendingFragment, shouldRestoreFocus, config, viewerSettings }` | Initial render (`fileName` is read by the webview but not sent upstream → falls back to `Note`) |
+| webview → host | `save`                                                                                         | markdown                                                                                                                  | Debounced 400 ms write                                                                               |
+| webview → host | `doSave`                                                                                       | markdown                                                                                                                  | Immediate write then`workbench.action.files.save`                                                  |
+| host → webview | `update`                                                                                       | markdown                                                                                                                  | External/agent edit pushed in                                                                        |
+| webview → host | `img` / `insertImage`                                                                        | image data / –                                                                                                           | Save image, reply`insertImageMarkdown`                                                             |
+| host → webview | `insertImageMarkdown`                                                                          | `![…](…)`                                                                                                             | Insert into editor                                                                                   |
+| webview → host | `export`                                                                                       | `{ type: 'pdf'\|'docx'\|'html', withoutOutline? }`                                                                        | Triggers`MarkdownService.exportMarkdown`                                                           |
+| webview → host | `command`                                                                                      | command id                                                                                                                | e.g.`office.markdown.paste`                                                                        |
+| webview → host | `openLink`                                                                                     | uri /`wiki:…`                                                                                                          | Resolve + open local/remote/URL                                                                      |
+| host ↔ webview | `openLinkError`, `gotoBlock`, `markdownConfig`, `viewerSettings`, `viewerSettingsSync` | –                                                                                                                        | Links, config sync, settings sync                                                                    |
+| webview → host | `editorTheme`, `codeMirrorTheme`, `mermaidTheme`, `editMode`                             | value                                                                                                                     | Persisted via`Global.updateConfig`                                                                 |
+| webview → host | `syncViewerSettings`, `editViewerSettings`                                                   | settings                                                                                                                  | Shared editor settings file                                                                          |
+| webview → host | `queryAIAvailable`, `queryVSCodeModels`, `aiPolish`, `aiPolishCancel`                    | –                                                                                                                        | AI Polish                                                                                            |
+| host → webview | `aiAvailable`, `vscodeModels`, `aiPolishChunk`, `aiPolishEnd`                            | –                                                                                                                        | AI Polish streaming                                                                                  |
+| webview → host | `telemetry`                                                                                    | `{ event, properties }`                                                                                                 | Telemetry (no-op while disabled)                                                                                    |
+| webview → host | `editInVSCode`, `showInFolder`, `developerTool`, `openSponsor`, `openExternal`         | –                                                                                                                        | Standard actions                                                                                     |
 
 ### 4.6 Why the Markdown webview uses the TextDocument
 
@@ -319,12 +322,13 @@ attaches `panel.webview.onDidReceiveMessage` and exposes `.on(event, cb)` / `.em
 
 `src/service/markdown/wikilink/**` implements `[[Page]]`, `[[Page#Heading]]`, `[[Page|label]]`
 and `![[embed]]`:
+
 - `parse.ts` → `WikiLinkTarget`, `normalizePage`;
 - `searchRoots.ts` / `fileSearch.ts` → find candidate files in the workspace;
 - `resolve.ts` → pick the best match (extension-agnostic, heading-aware);
 - `open.ts` → open with the correct editor, scrolling to `#fragment`.
-The webview converts `wiki:` hrefs into `openLink` messages; the host replies with
-`openLinkError` (rendered as a toast) when resolution fails.
+  The webview converts `wiki:` hrefs into `openLink` messages; the host replies with
+  `openLinkError` (rendered as a toast) when resolution fails.
 
 ---
 
@@ -334,13 +338,13 @@ The webview converts `wiki:` hrefs into `openLink` messages; the host replies wi
 
 `resource/pdf/**` is a pdf.js viewer build plus OfficeTools styling/glue:
 
-| File | Role |
-| --- | --- |
-| `viewer.html` | Shell, `<base href="{{baseUrl}}/">`, toolbar markup |
-| `viewer.js`, `pdf.js`, `pdf.worker.js` | pdf.js runtime + worker |
-| `viewer.css`, `viewer_adjust.css` | Base styles + OfficeTools overrides |
-| `main.js` | **OfficeTools glue**: theming, sidebar resize, scale dropdown, open handshake |
-| `locale/**`, `cmaps/**`, `standard_fonts/**`, `images/**` | pdf.js resources |
+| File                                                              | Role                                                                                |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `viewer.html`                                                   | Shell,`<base href="{{baseUrl}}/">`, toolbar markup                                |
+| `viewer.js`, `pdf.js`, `pdf.worker.js`                      | pdf.js runtime + worker                                                             |
+| `viewer.css`, `viewer_adjust.css`                             | Base styles + OfficeTools overrides                                                 |
+| `main.js`                                                       | **OfficeTools glue**: theming, sidebar resize, scale dropdown, open handshake |
+| `locale/**`, `cmaps/**`, `standard_fonts/**`, `images/**` | pdf.js resources                                                                    |
 
 ### 5.2 The additions in `main.js`
 
@@ -383,10 +387,10 @@ npm run build  =  node build.ts --mode=production
 
 `build.ts` (esbuild):
 
-| Target | Entry | Output | Platform | Notes |
-| --- | --- | --- | --- | --- |
-| Desktop | `src/extension.ts` | `out/extension.js` | node (cjs) | all deps bundled, `vscode` external; copies `template/**` → `out/` |
-| Web | `src/extension.web.ts` | `out/extension.web.js` | browser (cjs) | Node built-ins + `puppeteer-core`/`chrome-finder`/`file-type` replaced by `src/shims/*` |
+| Target  | Entry                    | Output                   | Platform      | Notes                                                                                          |
+| ------- | ------------------------ | ------------------------ | ------------- | ---------------------------------------------------------------------------------------------- |
+| Desktop | `src/extension.ts`     | `out/extension.js`     | node (cjs)    | all deps bundled,`vscode` external; copies `template/**` → `out/`                       |
+| Web     | `src/extension.web.ts` | `out/extension.web.js` | browser (cjs) | Node built-ins +`puppeteer-core`/`chrome-finder`/`file-type` replaced by `src/shims/*` |
 
 The desktop bundle is **self-contained** (≈8 MB) — no runtime `node_modules` needed, which is
 why packaging uses `--no-dependencies`.
@@ -396,14 +400,14 @@ by the exporter via `__dirname`-relative paths.
 
 ### 6.2 Scripts
 
-| Script | Command |
-| --- | --- |
-| `build` | `node build.ts --mode=production` |
-| `watch` | `node build.ts` (esbuild watch, dev) |
-| `compile` | `tsc --noEmit -p tsconfig.json` |
-| `package` | `npx --yes @vscode/vsce package --no-dependencies` |
-| `publish` | `vsce publish --no-dependencies && ovsx publish --no-dependencies` |
-| `vscode:prepublish` | `npm run build` |
+| Script                | Command                                                              |
+| --------------------- | -------------------------------------------------------------------- |
+| `build`             | `node build.ts --mode=production`                                  |
+| `watch`             | `node build.ts` (esbuild watch, dev)                               |
+| `compile`           | `tsc --noEmit -p tsconfig.json`                                    |
+| `package`           | `npx --yes @vscode/vsce package --no-dependencies`                 |
+| `publish`           | `vsce publish --no-dependencies && ovsx publish --no-dependencies` |
+| `vscode:prepublish` | `npm run build`                                                    |
 
 ### 6.3 Packaging
 
@@ -442,13 +446,13 @@ by the exporter via `__dirname`-relative paths.
 
 To avoid clashing with `cweijan.vscode-office` and `officefiles` when installed side by side:
 
-| Thing | Value | Rationale |
-| --- | --- | --- |
-| PDF view type | `officetools.pdfViewer` | unique custom-editor id |
-| Markdown view type | `officetools.markdownEditor` | unique custom-editor id |
-| Markdown preview | `officetools.markdownPreview` | on-demand preview |
-| Settings namespace | `officetools.*` | unique settings |
-| Activation | `onCustomEditor:*` only | no `onStartupFinished`; activates lazily |
+| Thing              | Value                           | Rationale                                 |
+| ------------------ | ------------------------------- | ----------------------------------------- |
+| PDF view type      | `officetools.pdfViewer`       | unique custom-editor id                   |
+| Markdown view type | `officetools.markdownEditor`  | unique custom-editor id                   |
+| Markdown preview   | `officetools.markdownPreview` | on-demand preview                         |
+| Settings namespace | `officetools.*`               | unique settings                           |
+| Activation         | `onCustomEditor:*` only       | no`onStartupFinished`; activates lazily |
 
 Internal identifiers that were intentionally left as upstream names:
 
@@ -461,6 +465,7 @@ Internal identifiers that were intentionally left as upstream names:
 ## 9. Known limitations & troubleshooting
 
 ### 9.1 PDF opens but shows **0 pages**  ✅ fixed
+
 **Root cause:** the pdf.js page renders only after the host answers its `init` message with an
 `open` payload. The trimmed provider originally never replied.
 **Fix:** `officeViewerProvider.ts` now binds a `Handler` and replies on `init`/`fileChange`
@@ -471,43 +476,56 @@ If it ever regresses, check, in order: (1) an `open` message is posted; (2) `pdf
 loads (DevTools console); (3) `localResourceRoots` includes the PDF's folder.
 
 ### 9.2 Export PDF fails / "no Chromium"
+
 Install a Chromium-based browser, or set `officetools.chromiumPath`. On Linux-as-root,
 `--no-sandbox` is added automatically; add more via `officetools.puppeteerArgs`.
 
 ### 9.3 Clipboard image paste (`office.markdown.paste`)
+
 The upstream helper shells out to `./lib/pc.ps1`, `./lib/mac.applescript`, `./lib/linux.sh`
 at the extension root; those scripts are **not vendored** in OfficeTools. Practically, use
 **drag-and-drop** or **Insert Image** (both work). The keybinding is harmless when the scripts
 are absent.
 
 ### 9.4 Web (vscode.dev / github.dev)
+
 `extension.web.ts` activates, but desktop-only features are hidden/disabled: clipboard paste
 and PDF/DOCX export (the context-menu items are marked `--desktop-only` and gated by
 `body.is-web`). Node-only helpers are shimmed in the web bundle.
 
 ### 9.5 Dev environment: `node_modules` symlink
+
 During development `vscode-officetools/node_modules` may be a symlink to a sibling checkout to
 speed up builds. It is git-ignored. For an isolated tree run a real `npm install` from the
 trimmed `package.json`.
 
 ### 9.6 Worker / CSP
+
 `viewer.html` runs the pdf.js worker from `resource/pdf/pdf.worker.js` via the page's `<base>`.
 If you front the viewer with a stricter CSP, allow `worker-src`/`script-src` for the webview
 origin.
+
+### 9.7 Telemetry is disabled
+
+`src/service/telemetryService.ts` ships with an **empty** `TELEMETRY_CONNECTION_STRING`, so
+`TelemetryReporter` is never constructed and `trackViewOpen` / `trackEvent` are no-ops — nothing
+is sent, even with `officetools.enableTelemetry` set to `true`. To enable it for a future
+publisher account, set your own Application Insights connection string there (the upstream
+`vscode-office` key has been removed).
 
 ---
 
 ## 10. Verification log
 
-| Check | Command | Result |
-| --- | --- | --- |
-| Type-check | `npx tsc --noEmit -p tsconfig.json` | clean |
-| Build | `node build.ts --mode=production` | `out/extension.js` + `out/extension.web.js` + `out/template` + `out/styles` |
-| Activate (desktop) | stub `vscode` harness | `activate() OK` (7 subscriptions) |
-| Activate (web) | stub `vscode` harness | `activate() OK` (6 subscriptions) |
-| PDF handshake | drive `resolveCustomEditor` + `init` | `open` emitted with correct path (file + virtual) |
-| Package | `npx @vscode/vsce package --no-dependencies` | `officetools-0.0.1.vsix` (359 files, ~7.4 MB) |
-| Install | `code --install-extension officetools-0.0.1.vsix --force` | installed |
+| Check              | Command                                                     | Result                                                                              |
+| ------------------ | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Type-check         | `npx tsc --noEmit -p tsconfig.json`                       | clean                                                                               |
+| Build              | `node build.ts --mode=production`                         | `out/extension.js` + `out/extension.web.js` + `out/template` + `out/styles` |
+| Activate (desktop) | stub`vscode` harness                                      | `activate() OK` (7 subscriptions)                                                 |
+| Activate (web)     | stub`vscode` harness                                      | `activate() OK` (6 subscriptions)                                                 |
+| PDF handshake      | drive`resolveCustomEditor` + `init`                     | `open` emitted with correct path (file + virtual)                                 |
+| Package            | `npx @vscode/vsce package --no-dependencies`              | `officetools-0.0.1.vsix` (359 files, ~7.4 MB)                                     |
+| Install            | `code --install-extension officetools-0.0.1.vsix --force` | installed                                                                           |
 
 ---
 
@@ -541,14 +559,19 @@ See `THIRD_PARTY_NOTICES.md` for the full list.
 
 ### 12.2 Change log
 
-| Commit | Summary |
-| --- | --- |
-| `ea8dbbd` | Add vscode-officetools: PDF + Markdown only viewer/editor extension (extraction, trimmed package.json/build/tsconfig/itignore, vendored `resource/`) |
-| `eaf024f` | Use unique viewTypes + `officetools.*` settings namespace; remove `onStartupFinished` |
-| `2b1df84` | **Fix PDF viewer stuck at 0 pages** — restore the `init → open` handshake in `officeViewerProvider` |
+| Commit      | Summary                                                                                                                                               |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ea8dbbd` | Add vscode-officetools: PDF + Markdown only viewer/editor extension (extraction, trimmed package.json/build/tsconfig/itignore, vendored`resource/`) |
+| `eaf024f` | Use unique viewTypes +`officetools.*` settings namespace; remove `onStartupFinished`                                                              |
+| `2b1df84` | **Fix PDF viewer stuck at 0 pages** — restore the `init → open` handshake in `officeViewerProvider`                                       |
+| `f352418` | Add `tech-report-notebook.md` — user + developer reference for the PDF/Markdown extension                                                          |
+| `19f8207` | Add local `.gitignore`; prune unused files (`resource/sponsor/`, `vscode.svg`, `ai-i18n.js`, dead `wikilink/fragment.ts`)                          |
 
 ### 12.3 Open questions / possible next steps
 
+- **Enable telemetry under our own publisher account** — supply our Application Insights
+  connection string in `src/service/telemetryService.ts` and (optionally) flip
+  `officetools.enableTelemetry` back to `true` when we publish (see §9.7).
 - Optionally rename the shared settings file `.vscode-office-viewer.json` → `.officetools-viewer.json`
   (kept upstream name for compatibility).
 - Optionally wire the clipboard-image scripts (or replace with the VS Code clipboard API).
@@ -561,22 +584,22 @@ See `THIRD_PARTY_NOTICES.md` for the full list.
 
 ## Appendix A — File map (quick reference)
 
-| Path | Purpose |
-| --- | --- |
-| `src/extension.ts` / `src/extension.web.ts` | Register PDF + Markdown providers |
-| `src/provider/officeViewerProvider.ts` | PDF viewer host + `init→open` handshake |
-| `src/provider/markdownEditorProvider.ts` | Markdown editor host + full protocol |
-| `src/service/markdownService.ts` | Export PDF/DOCX/HTML, clipboard image, switch editor |
-| `src/service/viewerSettingsService.ts` | `.vscode-office-viewer.json` settings |
-| `src/service/telemetryService.ts` | Telemetry (opt-out) |
-| `src/service/ai/*` | AI Polish clients |
-| `src/service/markdown/**` | wiki links, sync, outline, export helpers |
-| `resource/pdf/**` | pdf.js viewer runtime + OfficeTools glue |
-| `resource/markdown/**` | prebuilt Vditor editor runtime |
-| `resource/lib/vscode.js` | webview↔host bridge |
-| `template/**` → `out/**` | HTML/CSS for export |
-| `build.ts` | esbuild build |
-| `package.json` | Manifest: contributions, settings, deps |
+| Path                                            | Purpose                                              |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| `src/extension.ts` / `src/extension.web.ts` | Register PDF + Markdown providers                    |
+| `src/provider/officeViewerProvider.ts`        | PDF viewer host +`init→open` handshake            |
+| `src/provider/markdownEditorProvider.ts`      | Markdown editor host + full protocol                 |
+| `src/service/markdownService.ts`              | Export PDF/DOCX/HTML, clipboard image, switch editor |
+| `src/service/viewerSettingsService.ts`        | `.vscode-office-viewer.json` settings              |
+| `src/service/telemetryService.ts`             | Telemetry (disabled — ships without an endpoint)      |
+| `src/service/ai/*`                            | AI Polish clients                                    |
+| `src/service/markdown/**`                     | wiki links, sync, outline, export helpers            |
+| `resource/pdf/**`                             | pdf.js viewer runtime + OfficeTools glue             |
+| `resource/markdown/**`                        | prebuilt Vditor editor runtime                       |
+| `resource/lib/vscode.js`                      | webview↔host bridge                                 |
+| `template/**` → `out/**`                   | HTML/CSS for export                                  |
+| `build.ts`                                    | esbuild build                                        |
+| `package.json`                                | Manifest: contributions, settings, deps              |
 
 ## Appendix B — Manifest summary
 

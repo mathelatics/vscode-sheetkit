@@ -14,7 +14,7 @@ agent/MCP machinery and every other viewer:
 | --- | --- |
 | PDF viewer | `resource/pdf/**` (pdf.js viewer build), `src/provider/officeViewerProvider.ts` |
 | Markdown editor | `resource/markdown/**` (prebuilt Vditor editor), `src/provider/markdownEditorProvider.ts` |
-| Markdown services | wiki links, linked-file open, outline, export (PDF/DOCX/HTML), viewer settings, telemetry |
+| Markdown services | wiki links, linked-file open, outline, export (PDF/DOCX/HTML), viewer settings, telemetry (disabled) |
 | Configuration | `officetools.*` settings for the Markdown editor + Markdown PDF export |
 
 ## What was removed (vs `vscode-officefiles`)

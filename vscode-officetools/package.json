@@ -223,12 +223,12 @@
         "properties": {
           "officetools.enableTelemetry": {
             "type": "boolean",
-            "default": true,
+            "default": false,
             "tags": [
               "telemetry",
               "usesOnlineServices"
             ],
-            "markdownDescription": "Enable anonymous usage data collection to help improve OfficeTools. This respects VS Code global telemetry settings (`#telemetry.telemetryLevel#`)."
+            "markdownDescription": "Enable anonymous usage data collection to help improve OfficeTools. This respects VS Code global telemetry settings (`#telemetry.telemetryLevel#`). Currently inactive: OfficeTools ships without a telemetry endpoint."
           }
         }
       }
