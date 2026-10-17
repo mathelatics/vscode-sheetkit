@@ -1,7 +1,9 @@
 # Project Notes
 
 ## Goals
-- Ship MVP
+
+- Ship MVPii
+
 - Add agent tools
 
 Some **bold** text here.
