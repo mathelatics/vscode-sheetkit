@@ -566,6 +566,7 @@ See `THIRD_PARTY_NOTICES.md` for the full list.
 | `2b1df84` | **Fix PDF viewer stuck at 0 pages** — restore the `init → open` handshake in `officeViewerProvider`                                       |
 | `f352418` | Add `tech-report-notebook.md` — user + developer reference for the PDF/Markdown extension                                                          |
 | `19f8207` | Add local `.gitignore`; prune unused files (`resource/sponsor/`, `vscode.svg`, `ai-i18n.js`, dead `wikilink/fragment.ts`)                          |
+| `fb9f988` | **Disable telemetry** — empty connection string (upstream key removed); `officetools.enableTelemetry` defaults to `false` and is a no-op for now   |
 
 ### 12.3 Open questions / possible next steps
 
