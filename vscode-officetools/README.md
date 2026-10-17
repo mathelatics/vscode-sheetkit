@@ -57,3 +57,9 @@ resource/lib/vscode.js           shared webview bridge
 
 The PDF viewer and Markdown editor are vendored/adapted from the MIT-licensed
 [cweijan/vscode-office](https://github.com/cweijan/vscode-office). See `THIRD_PARTY_NOTICES.md`.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the developer guide (layout, build/debug, message
+bridge, conventions, testing, and release). For a deeper technical reference see
+[`tech-report-notebook.md`](./tech-report-notebook.md).

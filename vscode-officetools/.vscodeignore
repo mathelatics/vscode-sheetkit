@@ -12,6 +12,7 @@ out/node_modules/**
 eslint.config.mjs
 build.ts
 .vscodeignore
+CONTRIBUTING.md
 *.vsix
 package-lock.json
 !package.nls*.json
